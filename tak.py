@@ -11,11 +11,11 @@ class Player(Enum):
     WHITE = 1
 
 class Piece:
-    def __init__(self, color: int, piece_type: PieceType):
+    def __init__(self, color: Player, piece_type: PieceType):
         self.color = color
         self.piece_type = piece_type
 
-# self.board[row][col]
+# State.board[row][col]
 # O-----col----->
 # |
 # |
@@ -36,11 +36,11 @@ class State:
                 l.append([])
             self.board.append(l)
 
-        self.nFlats = {
+        self.num_flats = {
             Player.BLACK: 21,
             Player.WHITE: 21
         }
-        self.nCaps = {
+        self.num_caps = {
             Player.BLACK: 1,
             Player.WHITE: 1
         }
