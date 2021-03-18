@@ -4,6 +4,7 @@ from enum import Enum, auto
 from copy import deepcopy
 from pprint import pprint
 
+from utils import Position
 
 class PieceType(Enum):
     FLAT = auto()
@@ -33,6 +34,12 @@ class Piece:
 # |
 # |
 # v
+
+class Result(Enum):
+    NOT_FINISHED = auto()
+    BLACK_WIN = auto()
+    DRAW = auto()
+    WHITE_WIN = auto()
 
 class State:
     def __init__(self):
@@ -74,6 +81,69 @@ class State:
 
         return moves
     
+    def objective(self) -> Result:
+        '''Checks if the game is finished, returning the game's result (WHITE_WIN, DRAW or BLACK_WIN) or NOT_FINISHED otherwise.'''
+
+        def part_of_road(pos: Position, player: Player) -> bool:
+            return self.board[pos.row][pos.col] and self.board[pos.row][pos.col][-1].color == player and self.board[pos.row][pos.col][-1].type != PieceType.WALL
+
+        # Depth first search (to search for road)
+        def dfs(stack: List[Position], player: Player):
+            visited = set()
+
+            while stack:
+                pos = stack.pop()
+                if pos not in visited:
+                    visited.add(pos)
+                    adjacent = [pos.up(), pos.down(), pos.left(), pos.right()]
+                    
+                    for adj_pos in adjacent:
+                        if pos not in visited and pos.is_within_bounds() and part_of_road(pos, player):
+                            stack.append(adj_pos)
+            
+            return visited
+        
+        end_rows = set(Position(row, 4) for row in range(5))
+        end_cols = set(Position(4, col) for col in range(5))
+        
+        # Search for white road (horizontal or vertical)
+        start_rows = [Position(row, 0) for row in range(5) if part_of_road(Position(row, 0), Player.WHITE)]
+        start_cols = [Position(0, col) for col in range(5) if part_of_road(Position(0, col), Player.WHITE)]
+        
+        if end_rows.intersection(dfs(start_rows, Player.WHITE)) or end_cols.intersection(dfs(start_cols, Player.WHITE)):
+            return Result.WHITE_WIN
+
+        # Search for black road (horizontal or vertical)
+        start_rows = [Position(row, 0) for row in range(5) if part_of_road(Position(row, 0), Player.BLACK)]
+        start_cols = [Position(0, col) for col in range(5) if part_of_road(Position(0, col), Player.BLACK)]
+
+        if end_rows.intersection(dfs(start_rows, Player.BLACK)) or end_cols.intersection(dfs(start_cols, Player.BLACK)):
+            return Result.BLACK_WIN
+
+        # Test for flat win
+        controlled_flats = { Player.BLACK: 0, Player.WHITE: 0 }
+        board_full = True
+        for row in range(5):
+            for col in range(5):
+                if not self.board[row][col]:
+                    board_full = False
+                    break
+                
+                top = self.board[row][col][-1]
+                if top.type == PieceType.FLAT:
+                    controlled_flats[top.color] += 1
+            
+            if not board_full:
+                break
+        else:
+            if controlled_flats[Player.WHITE] > controlled_flats[Player.BLACK]:
+                return Result.WHITE_WIN
+            elif controlled_flats[Player.BLACK] > controlled_flats[Player.WHITE]:
+                return Result.BLACK_WIN
+            return Result.DRAW
+
+        return Result.NOT_FINISHED
+
     def possible_states(self) -> List:
         pass
     
