@@ -65,5 +65,3 @@ def get_partitions(num: int) -> set:
             answer.add((x, ) + y)
 
     return answer
-
-print(get_partitions_with_leading_zero(4))

@@ -4,14 +4,14 @@ from enum import Enum, auto
 from copy import deepcopy
 from pprint import pprint
 
-from utils import Position
+from utils import Position, get_partitions_with_leading_zero
 
 class PieceType(Enum):
     FLAT = auto()
     WALL = auto()
     CAPSTONE = auto()
 
-class Player(Enum):
+class Player:
     BLACK = -1
     WHITE = 1
 
@@ -21,7 +21,7 @@ class Piece:
         self.type = type
     
     def __repr__(self):
-        colors = { -1: 'w', 1: 'b' }
+        colors = { Player.WHITE: 'w', Player.BLACK: 'b' }
         types = { PieceType.FLAT: 'f', PieceType.WALL: 'w', PieceType.CAPSTONE: 'c' }
 
         return colors[self.color] + types[self.type]
@@ -44,7 +44,7 @@ class Result(Enum):
 class State:
     def __init__(self):
         self.first_turn = True
-        self.current_player = 1
+        self.current_player = Player.WHITE
         
         self.board = []
         for _ in range(5):
@@ -54,15 +54,24 @@ class State:
             self.board.append(l)
 
         self.num_flats = {
-            1: 21,
-            -1: 21
+            Player.WHITE: 21,
+            Player.BLACK: 21
         }
         self.num_caps = {
-            1: 1,
-            -1: 1
+            Player.WHITE: 1,
+            Player.BLACK: 1
         }
     
     def evaluate(self, player: Player) -> int: # TODO
+        result = self.objective()
+
+        if result == Result.DRAW:
+            return 0
+        elif (result == Result.WHITE_WIN and player == Player.WHITE) or (result == Result.BLACK_WIN and player == Player.BLACK):
+            return int(1e9)
+        elif (result == Result.WHITE_WIN and player == Player.BLACK) or (result == Result.BLACK_WIN and player == Player.BLACK):
+            return int(-1e9)
+
         return 0
     
     def possible_moves(self) -> List:
@@ -73,7 +82,12 @@ class State:
                 move_types = [PlaceFlat(row, col), PlaceWall(row, col), PlaceCap(row, col)]
 
                 for direction in directions.values():
-                    move_types.append(MovePiece(row, col, direction))
+                    move_types.append(MovePiece(Position(row, col), direction))
+
+                    stack_size = len(self.board[row][col])
+                    if stack_size > 1:
+                        for partition in get_partitions_with_leading_zero(stack_size):
+                            move_types.append(SplitStack(Position(row, col), direction, partition))
 
                 for move in move_types:
                     if move.is_valid(self):
@@ -222,25 +236,22 @@ class PlaceCap(Move):
         return state_copy
 
 directions = {
-    'UP': [-1, 0],
-    'DOWN': [1, 0],
-    'LEFT': [0, -1],
-    'RIGHT': [0, 1]
+    'UP': Position(-1, 0),
+    'DOWN': Position(1, 0),
+    'LEFT': Position(0, -1),
+    'RIGHT': Position(0, 1)
 }
 
 class MovePiece(Move):
-    def __init__(self, row: int, col: int, direction):
-        self.row = row
-        self.col = col
-        self.direction = direction
-        self.row_to = row + direction[0]
-        self.col_to = col + direction[1]
+    def __init__(self, pos: Position, direction: Position):
+        self.pos = pos
+        self.pos_to = pos + direction
     
     def is_valid(self, state: State) -> bool:
-        if self.row_to < 0 or self.row_to > 4 or self.col_to < 0 or self.col_to > 4:
+        if not self.pos_to.is_within_bounds():
             return False
         
-        stack = state.board[self.row][self.col]
+        stack = state.board[self.pos.row][self.pos.col]
         if len(stack) != 1:
             return False
 
@@ -248,7 +259,7 @@ class MovePiece(Move):
         if piece.color != state.current_player:
             return False
 
-        stack_to = state.board[self.row_to][self.col_to]
+        stack_to = state.board[self.pos_to.row][self.pos_to.col]
         if stack_to:
             piece_to = stack_to[-1]
         
@@ -263,9 +274,9 @@ class MovePiece(Move):
     def play(self, state: State) -> State:
         state_copy = deepcopy(state)
 
-        stack = state_copy.board[self.row][self.col]
+        stack = state_copy.board[self.pos.row][self.pos.col]
         piece = stack[-1]
-        stack_to = state_copy.board[self.row_to][self.col_to]
+        stack_to = state_copy.board[self.pos_to.col][self.pos_to.col]
 
         if piece.type == PieceType.CAPSTONE and stack_to and stack_to[-1].type == PieceType.WALL:
             stack_to[-1].type = PieceType.FLAT
@@ -276,7 +287,57 @@ class MovePiece(Move):
         return state_copy
     
     def __repr__(self):
-        return "MovePiece (" + str(self.row) + ", " + str(self.col) + ") -> (" + str(self.row_to) + ", " + str(self.col_to) + ")"
+        return "MovePiece (" + str(self.pos.row) + ", " + str(self.pos.col) + ") -> (" + str(self.pos_to.row) + ", " + str(self.pos_to.col) + ")"
+
+class SplitStack(Move):
+    def __init__(self, pos: Position, direction, split: List[int]):
+        self.pos = pos
+        self.direction = direction
+        self.split = split
+    
+    def is_valid(self, state: State) -> bool: # TODO
+        stack = state.board[self.pos.row][self.pos.col]
+
+        if len(stack) <= 1 or stack[-1].color != state.current_player or len(stack) != sum(self.split):
+            return False
+        
+        stack_copy = deepcopy(stack)
+        for i, num_pieces in enumerate(self.split):
+            if i != 0:
+                if num_pieces == 0:
+                    return False
+                
+                stack_slice, stack_copy = stack_copy[:num_pieces], stack_copy[num_pieces:]
+
+                pos_to = self.pos + self.direction.scalar_mult(i)
+                if not pos_to.is_within_bounds():
+                    return False
+                
+                stack_to = state.board[pos_to.row][pos_to.col]
+
+                if stack_to and (stack_to[-1].type == PieceType.CAPSTONE (or stack_to[-1].type == PieceType.WALL and stack_slice[0].type != PieceType.CAPSTONE)):
+                    return False
+
+        return True
+
+    def play(self, state: State) -> State: # TODO
+        state_copy = deepcopy(state)
+
+        stack = state_copy.board[self.pos.row][self.pos.col]
+        state_copy.board[self.pos.row][self.pos.col] = []
+
+        for i, num_pieces in enumerate(self.split):
+            pos_to = self.pos + self.direction.scalar_mult(i)
+            stack_to = state_copy.board[pos_to.row][pos_to.col]
+
+            stack_slice, stack = stack[:num_pieces], stack[num_pieces:]
+
+            if stack_slice and stack_to and stack_slice[0].type == PieceType.CAPSTONE and stack_to[-1].type == PieceType.WALL:
+                stack_to[-1].type = PieceType.FLAT
+            
+            stack_to += stack_slice
+
+        return state_copy
 
 state = State()
 pprint(state.possible_moves())
