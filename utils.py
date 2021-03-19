@@ -5,7 +5,7 @@ class Position:
         self.col = col
 
     def __repr__(self):
-        return "(" + self.row + ", " + self.col + ")"
+        return "(" + str(self.row) + ", " + str(self.col) + ")"
     
     def __eq__(self, other):
         return self.row == other.row and self.col == other.col

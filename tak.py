@@ -45,13 +45,7 @@ class State:
     def __init__(self):
         self.first_turn = True
         self.current_player = Player.WHITE
-        
-        self.board = []
-        for _ in range(5):
-            l = []
-            for _ in range(5):
-                l.append([])
-            self.board.append(l)
+        self.board = [[[] for _ in range(5)] for _ in range(5)]
 
         self.num_flats = {
             Player.WHITE: 21,
@@ -79,7 +73,7 @@ class State:
 
         for row in range(5):
             for col in range(5):
-                move_types = [PlaceFlat(row, col), PlaceWall(row, col), PlaceCap(row, col)]
+                move_types = [PlaceFlat(Position(row, col)), PlaceWall(Position(row, col)), PlaceCap(Position(row, col))]
 
                 for direction in directions.values():
                     move_types.append(MovePiece(Position(row, col), direction))
@@ -175,65 +169,69 @@ class Move:
         raise NotImplementedError()
 
 class PlaceFlat(Move):
-    def __init__(self, row: int, col: int):
-        self.row = row
-        self.col = col
+    def __init__(self, pos: Position):
+        self.pos = pos
 
     def is_valid(self, state: State) -> bool:
-        return not state.board[self.row][self.col] and state.num_flats[state.current_player] > 0
+        return not state.board[self.pos.row][self.pos.col] and state.num_flats[state.current_player] > 0
     
     def play(self, state: State) -> State:
         state_copy = deepcopy(state)
 
         if state_copy.first_turn:
-            state_copy.board[self.row][self.col].append(Piece(-state_copy.current_player, PieceType.FLAT))
+            state_copy.board[self.pos.row][self.pos.col].append(Piece(-state_copy.current_player, PieceType.FLAT))
             state_copy.num_flats[-state_copy.current_player] -= 1
 
             if state_copy.current_player == Player.BLACK:
                 state_copy.first_turn = False
         else:
-            state_copy.board[self.row][self.col].append(Piece(state_copy.current_player, PieceType.FLAT))
+            state_copy.board[self.pos.row][self.pos.col].append(Piece(state_copy.current_player, PieceType.FLAT))
             state_copy.num_flats[state_copy.current_player] -= 1
         
         state_copy.current_player = -state_copy.current_player
         return state_copy
     
     def __repr__(self):
-        return 'PlaceFlat (' + str(self.row) + ', ' + str(self.col) + ')'
+        return 'PlaceFlat ' + str(self.pos)
 
 class PlaceWall(Move):
-    def __init__(self, row: int, col: int):
-        self.row = row
-        self.col = col
+    def __init__(self, pos: Position):
+        self.pos = pos
 
     def is_valid(self, state: State) -> bool:
-        return not state.board[self.row][self.col] and state.num_flats[state.current_player] > 0 and not state.first_turn
+        return not state.board[self.pos.row][self.pos.col] and state.num_flats[state.current_player] > 0 and not state.first_turn
     
     def play(self, state: State) -> State:
         state_copy = deepcopy(state)
 
-        state_copy.board[self.row][self.col].append(Piece(state_copy.current_player, PieceType.WALL))
+        state_copy.board[self.pos.row][self.pos.col].append(Piece(state_copy.current_player, PieceType.WALL))
         state_copy.num_flats[state_copy.current_player] -= 1
 
         state_copy.current_player = -state_copy.current_player
         return state_copy
+    
+    def __repr__(self):
+        return 'PlaceWall ' + str(self.pos)
+
 
 class PlaceCap(Move):
-    def __init__(self, row: int, col: int):
-        self.row = row
-        self.col = col
+    def __init__(self, pos: Position):
+        self.pos = pos
 
     def is_valid(self, state: State) -> bool:
-        return not state.board[self.row][self.col] and state.num_caps[state.current_player] > 0 and not state.first_turn
+        return not state.board[self.pos.row][self.pos.col] and state.num_caps[state.current_player] > 0 and not state.first_turn
     
     def play(self, state: State) -> State:
         state_copy = deepcopy(state)
 
-        state_copy.board[self.row][self.col].append(Piece(state_copy.current_player, PieceType.CAPSTONE))
+        state_copy.board[self.pos.row][self.pos.col].append(Piece(state_copy.current_player, PieceType.CAPSTONE))
         state_copy.num_caps[state_copy.current_player] -= 1
 
         state_copy.current_player = -state_copy.current_player
         return state_copy
+    
+    def __repr__(self):
+        return 'PlaceCap ' + str(self.pos)
 
 directions = {
     'UP': Position(-1, 0),
@@ -287,7 +285,7 @@ class MovePiece(Move):
         return state_copy
     
     def __repr__(self):
-        return "MovePiece (" + str(self.pos.row) + ", " + str(self.pos.col) + ") -> (" + str(self.pos_to.row) + ", " + str(self.pos_to.col) + ")"
+        return "MovePiece " + str(self.pos) + " -> " + str(self.pos_to)
 
 class SplitStack(Move):
     def __init__(self, pos: Position, direction, split: List[int]):
@@ -295,7 +293,7 @@ class SplitStack(Move):
         self.direction = direction
         self.split = split
     
-    def is_valid(self, state: State) -> bool: # TODO
+    def is_valid(self, state: State) -> bool:
         stack = state.board[self.pos.row][self.pos.col]
 
         if len(stack) <= 1 or stack[-1].color != state.current_player or len(stack) != sum(self.split):
@@ -320,7 +318,7 @@ class SplitStack(Move):
 
         return True
 
-    def play(self, state: State) -> State: # TODO
+    def play(self, state: State) -> State:
         state_copy = deepcopy(state)
 
         stack = state_copy.board[self.pos.row][self.pos.col]
