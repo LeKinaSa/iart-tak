@@ -315,7 +315,7 @@ class SplitStack(Move):
                 
                 stack_to = state.board[pos_to.row][pos_to.col]
 
-                if stack_to and (stack_to[-1].type == PieceType.CAPSTONE (or stack_to[-1].type == PieceType.WALL and stack_slice[0].type != PieceType.CAPSTONE)):
+                if stack_to and (stack_to[-1].type == PieceType.CAPSTONE or (stack_to[-1].type == PieceType.WALL and stack_slice[0].type != PieceType.CAPSTONE)):
                     return False
 
         return True
