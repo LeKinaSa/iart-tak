@@ -68,8 +68,71 @@ class State:
     def possible_states(self) -> List:
         pass
     
+    def possible_state(self, move): # -> State # TODO
+        pass
+    
     def play_move(self, move): # -> State
         pass
+    
+    def minimax(self, cuts: bool):
+        alpha = 0
+        beta = 0
+        if cuts:
+            alpha = -99999 # TODO -> start value for max
+            beta  =  99999 # TODO -> start value for min
+        self.minimax_max(cuts, alpha, beta)
+    
+    def minimax_max(self, cuts: bool, alpha: int, beta: int):
+        best_move = None
+        max_value = -99999 # Start Value
+        
+        for move in self.possible_moves():
+            new_state = self.possible_state(move)
+            
+            game_is_over = False # TODO
+            if game_is_over: # TODO -> if its a loss, it shouldn't return
+                value = 0 # TODO -> verify a good value for win, loss, tie
+            else:
+                (value, _) = new_state.minimax_min(cuts, alpha, beta)
+            
+            if value > max_value:
+                max_value = value
+                best_move = move
+            
+            if cuts:
+                if max_value >= beta:
+                    return (max_value, move)
+        
+                if max_value > alpha:
+                    alpha = max_value
+            
+        return (max_value, best_move)
+    
+    def minimax_min(self, cuts: bool, alpha: int, beta: int):
+        best_move = None
+        min_value = 99999 # Start Value
+        
+        for move in self.possible_moves():
+            new_state = self.possible_state(move)
+            
+            game_is_over = False # TODO
+            if game_is_over: # TODO -> if its a loss, it shouldn't return
+                value = 0 # TODO -> verify a good value for win, loss, tie
+            else:
+                (value, _) = new_state.minimax_max(cuts, alpha, beta)
+            
+            if value < min_value:
+                min_value = value
+                best_move = move
+            
+            if cuts:
+                if min_value <= alpha:
+                            return (min_value, move)
+    
+                if min_value < beta:
+                    beta = min_value
+            
+        return (min_value, best_move)
 
 
 
