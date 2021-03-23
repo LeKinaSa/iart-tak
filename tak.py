@@ -41,19 +41,31 @@ class Result(Enum):
     DRAW = auto()
     WHITE_WIN = auto()
 
+# Number of pieces for each board size
+flats_for_size = {
+    3: 10, 4: 15, 5: 21,
+    6: 30, 7: 40, 8: 50
+}
+
+capstones_for_size = {
+    3: 0, 4: 0, 5: 1,
+    6: 1, 7: 1, 8: 2
+}
+
 class State:
-    def __init__(self):
+    def __init__(self, board_size = 5):
         self.first_turn = True
         self.current_player = Player.WHITE
-        self.board = [[[] for _ in range(5)] for _ in range(5)]
+        self.board = [[[] for _ in range(board_size)] for _ in range(board_size)]
+        self.board_size = board_size
 
         self.num_flats = {
-            Player.WHITE: 21,
-            Player.BLACK: 21
+            Player.WHITE: flats_for_size[board_size],
+            Player.BLACK: flats_for_size[board_size]
         }
         self.num_caps = {
-            Player.WHITE: 1,
-            Player.BLACK: 1
+            Player.WHITE: capstones_for_size[board_size],
+            Player.BLACK: capstones_for_size[board_size]
         }
     
     def evaluate(self, player: Player) -> int: # TODO
@@ -71,8 +83,8 @@ class State:
     def possible_moves(self) -> List:
         moves = []
 
-        for row in range(5):
-            for col in range(5):
+        for row in range(self.board_size):
+            for col in range(self.board_size):
                 move_types = [PlaceFlat(Position(row, col)), PlaceWall(Position(row, col)), PlaceCap(Position(row, col))]
 
                 for direction in directions.values():
@@ -106,24 +118,24 @@ class State:
                     adjacent = [pos.up(), pos.down(), pos.left(), pos.right()]
                     
                     for adj_pos in adjacent:
-                        if pos not in visited and pos.is_within_bounds() and part_of_road(pos, player):
+                        if pos not in visited and pos.is_within_bounds(0, self.board_size - 1) and part_of_road(pos, player):
                             stack.append(adj_pos)
             
             return visited
         
-        end_rows = set(Position(row, 4) for row in range(5))
-        end_cols = set(Position(4, col) for col in range(5))
+        end_rows = set(Position(row, 4) for row in range(self.board_size))
+        end_cols = set(Position(4, col) for col in range(self.board_size))
         
         # Search for white road (horizontal or vertical)
-        start_rows = [Position(row, 0) for row in range(5) if part_of_road(Position(row, 0), Player.WHITE)]
-        start_cols = [Position(0, col) for col in range(5) if part_of_road(Position(0, col), Player.WHITE)]
+        start_rows = [Position(row, 0) for row in range(self.board_size) if part_of_road(Position(row, 0), Player.WHITE)]
+        start_cols = [Position(0, col) for col in range(self.board_size) if part_of_road(Position(0, col), Player.WHITE)]
         
         if end_rows.intersection(dfs(start_rows, Player.WHITE)) or end_cols.intersection(dfs(start_cols, Player.WHITE)):
             return Result.WHITE_WIN
 
         # Search for black road (horizontal or vertical)
-        start_rows = [Position(row, 0) for row in range(5) if part_of_road(Position(row, 0), Player.BLACK)]
-        start_cols = [Position(0, col) for col in range(5) if part_of_road(Position(0, col), Player.BLACK)]
+        start_rows = [Position(row, 0) for row in range(self.board_size) if part_of_road(Position(row, 0), Player.BLACK)]
+        start_cols = [Position(0, col) for col in range(self.board_size) if part_of_road(Position(0, col), Player.BLACK)]
 
         if end_rows.intersection(dfs(start_rows, Player.BLACK)) or end_cols.intersection(dfs(start_cols, Player.BLACK)):
             return Result.BLACK_WIN
@@ -131,8 +143,8 @@ class State:
         # Test for flat win
         controlled_flats = { Player.BLACK: 0, Player.WHITE: 0 }
         board_full = True
-        for row in range(5):
-            for col in range(5):
+        for row in range(self.board_size):
+            for col in range(self.board_size):
                 if not self.board[row][col]:
                     board_full = False
                     break
@@ -246,7 +258,7 @@ class MovePiece(Move):
         self.pos_to = pos + direction
     
     def is_valid(self, state: State) -> bool:
-        if not self.pos_to.is_within_bounds():
+        if not self.pos_to.is_within_bounds(0, state.board_size - 1):
             return False
         
         stack = state.board[self.pos.row][self.pos.col]
@@ -308,7 +320,7 @@ class SplitStack(Move):
                 stack_slice, stack_copy = stack_copy[:num_pieces], stack_copy[num_pieces:]
 
                 pos_to = self.pos + self.direction.scalar_mult(i)
-                if not pos_to.is_within_bounds():
+                if not pos_to.is_within_bounds(0, state.board_size - 1):
                     return False
                 
                 stack_to = state.board[pos_to.row][pos_to.col]

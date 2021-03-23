@@ -34,7 +34,7 @@ class Position:
     def right(self):
         return Position(self.row, self.col + 1)
     
-    def is_within_bounds(self, lower = 0, upper = 4) -> bool:
+    def is_within_bounds(self, lower, upper) -> bool:
         return self.row >= lower and self.row <= upper and self.col >= lower and self.col <= upper
 
 
