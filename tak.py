@@ -74,17 +74,23 @@ class State:
     def play_move(self, move): # -> State
         pass
     
-    def minimax(self, cuts: bool):
+    def minimax(self, depth: int, cuts: bool):
+        if depth <= 0:
+            return None
         alpha = 0
         beta = 0
         if cuts:
             alpha = -99999 # TODO -> start value for max
             beta  =  99999 # TODO -> start value for min
-        self.minimax_max(cuts, alpha, beta)
+        (_, move) = self.minimax_max(depth, cuts, alpha, beta)
+        return move
     
-    def minimax_max(self, cuts: bool, alpha: int, beta: int):
+    def minimax_max(self, depth: int, cuts: bool, alpha: int, beta: int):
         best_move = None
         max_value = -99999 # Start Value
+        
+        if depth == 0:
+            return self.evaluate(self.current_player)
         
         for move in self.possible_moves():
             new_state = self.possible_state(move)
@@ -93,7 +99,7 @@ class State:
             if game_is_over: # TODO -> if its a loss, it shouldn't return
                 value = 0 # TODO -> verify a good value for win, loss, tie
             else:
-                (value, _) = new_state.minimax_min(cuts, alpha, beta)
+                (value, _) = new_state.minimax_min(depth - 1, cuts, alpha, beta)
             
             if value > max_value:
                 max_value = value
@@ -108,9 +114,12 @@ class State:
             
         return (max_value, best_move)
     
-    def minimax_min(self, cuts: bool, alpha: int, beta: int):
+    def minimax_min(self, depth: int, cuts: bool, alpha: int, beta: int):
         best_move = None
         min_value = 99999 # Start Value
+        
+        if depth == 0:
+            return self.evaluate(self.current_player)
         
         for move in self.possible_moves():
             new_state = self.possible_state(move)
@@ -119,7 +128,7 @@ class State:
             if game_is_over: # TODO -> if its a loss, it shouldn't return
                 value = 0 # TODO -> verify a good value for win, loss, tie
             else:
-                (value, _) = new_state.minimax_max(cuts, alpha, beta)
+                (value, _) = new_state.minimax_max(depth - 1, cuts, alpha, beta)
             
             if value < min_value:
                 min_value = value
