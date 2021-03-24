@@ -258,7 +258,7 @@ class MovePiece(Move):
         self.pos_to = pos + direction
     
     def is_valid(self, state: State) -> bool:
-        if not self.pos_to.is_within_bounds(0, state.board_size - 1):
+        if state.first_turn or not self.pos_to.is_within_bounds(0, state.board_size - 1):
             return False
         
         stack = state.board[self.pos.row][self.pos.col]
@@ -348,6 +348,9 @@ class SplitStack(Move):
             stack_to += stack_slice
 
         return state_copy
+    
+    def __repr__(self):
+        return "SplitStack " + str(self.pos) + " | " + str(self.direction) + " | " + str(self.split)
 
 state = State()
 pprint(state.possible_moves())
