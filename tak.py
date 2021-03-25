@@ -352,7 +352,7 @@ class MovePiece(Move):
 
         stack = state_copy.board[self.pos.row][self.pos.col]
         piece = stack[-1]
-        stack_to = state_copy.board[self.pos_to.col][self.pos_to.col]
+        stack_to = state_copy.board[self.pos_to.row][self.pos_to.col]
 
         if piece.type == PieceType.CAPSTONE and stack_to and stack_to[-1].type == PieceType.WALL:
             stack_to[-1].type = PieceType.FLAT
