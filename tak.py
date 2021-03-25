@@ -360,6 +360,7 @@ class MovePiece(Move):
         stack_to.append(piece)
         stack.pop()
 
+        state_copy.current_player = -state_copy.current_player
         return state_copy
     
     def __repr__(self):
@@ -413,6 +414,7 @@ class SplitStack(Move):
             
             stack_to += stack_slice
 
+        state_copy.current_player = -state_copy.current_player
         return state_copy
     
     def __repr__(self):
