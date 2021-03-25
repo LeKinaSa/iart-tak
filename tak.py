@@ -178,6 +178,43 @@ class State:
         (_, move) = self.minimax_max(depth, pruning, alpha, beta)
         return move
     
+    def negamax(self, depth: int, pruning: bool):
+        if depth <= 0:
+            return None
+        
+        alpha, beta = 0, 0
+
+        if pruning:
+            alpha, beta = int(-1e9), int(1e9)
+
+        _, move = self.negamax_recursive(depth, pruning, alpha, beta, 1)
+        return move
+    
+    def negamax_recursive(self, depth: int, pruning: bool, alpha: int, beta: int, player: int):
+        moves = self.possible_moves()
+
+        if depth == 0 or not moves:
+            return player * self.evaluate(self.current_player), None
+
+        best_move = None
+        max_value = int(-1e9)
+        for move in moves:
+            new_state = move.play(self)
+            
+            value, _ = new_state.negamax_recursive(depth - 1, pruning, -beta, -alpha, -player)
+            value = -value
+
+            if value > max_value:
+                max_value = value
+                best_move = move
+            
+            if pruning:
+                alpha = max(alpha, max_value)
+                if alpha >= beta:
+                    break
+
+        return max_value, best_move
+
     def minimax_max(self, depth: int, pruning: bool, alpha: int, beta: int):
         best_move = None
         max_value = -99999 # Start Value
