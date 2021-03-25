@@ -167,12 +167,6 @@ class State:
     def possible_states(self) -> List:
         pass
     
-    def possible_state(self, move): # -> State # TODO
-        pass
-    
-    def play_move(self, move): # -> State
-        pass
-    
     def minimax(self, depth: int, cuts: bool):
         if depth <= 0:
             return None
@@ -192,7 +186,7 @@ class State:
             return self.evaluate(self.current_player)
         
         for move in self.possible_moves():
-            new_state = self.possible_state(move)
+            new_state = move.play(self)
             
             game_is_over = False # TODO
             if game_is_over: # TODO -> if its a loss, it shouldn't return
@@ -221,7 +215,7 @@ class State:
             return self.evaluate(self.current_player)
         
         for move in self.possible_moves():
-            new_state = self.possible_state(move)
+            new_state = move.play(state)
             
             game_is_over = False # TODO
             if game_is_over: # TODO -> if its a loss, it shouldn't return
@@ -235,7 +229,7 @@ class State:
             
             if cuts:
                 if min_value <= alpha:
-                            return (min_value, move)
+                    return (min_value, move)
     
                 if min_value < beta:
                     beta = min_value
