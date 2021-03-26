@@ -78,25 +78,56 @@ class State:
         elif (result == Result.WHITE_WIN and player == Player.BLACK) or (result == Result.BLACK_WIN and player == Player.BLACK):
             return int(-1e9)
         
-        # Game is not Finished
+        def heuristic_num_flats() -> int:
+            value = 0
+
+            for row in range(self.board_size):
+                for col in range(self.board_size):
+                    stack = self.board[row][col]
+                    if stack and stack[-1].type == PieceType.FLAT:
+                        # Positive if stack is controlled by the player, negative otherwise
+                        value += player * stack[-1].color
+            
+            return value
         
-        # More flats on the board means more ways to win
-        value = self.num_flats[-player] - self.num_flats[player]
+        def heuristic_corner_pieces() -> int:
+            value = 0
+            corners = [Position(0, 0), Position(0, self.board_size - 1), Position(self.board_size - 1, 0), Position(self.board_size - 1, self.board_size - 1)]
 
-        # If you control the corners, you have an advantadge
-        corners = [(0, 0), (0, self.board_size), (0, self.board_size), (self.board_size, self.board_size)]
-        corner_value = 5 # TODO: verify this value and search if there is any better value
+            for position in corners:
+                stack = self.board[position.row][position.col]
+                if stack and stack[-1].type != PieceType.WALL:
+                    value += player * stack[-1].color
 
-        for position in corners:
-            corner = self.board[position[0], position[1]]
-            if len(corner) != 0:
-                top_piece = corner[len(corner) - 1]
-                if (top_piece.color == player) and (top_piece.type != PieceType.WALL):
-                    value += corner_value
-                else:
-                    value -= corner_value
+            return value
 
-        return 0
+        def heuristic_penalty_walls() -> int:
+            value = 0
+
+            for row in range(self.board_size):
+                for col in range(self.board_size):
+                    stack = self.board[row][col]
+                    if len(stack) == 1 and stack[0].type == PieceType.WALL:
+                        adjacent = [Position(row, col) + direction for direction in directions.values()]
+                        adjacent = filter(lambda x: x.is_within_bounds(0, self.board_size - 1), adjacent)
+
+                        # Obtain adjacent stacks which are not empty
+                        adjacent_stacks = [self.board[pos.row][pos.col] for pos in adjacent]
+                        adjacent_stacks = filter(lambda x: x, adjacent_stacks)
+
+                        if not adjacent_stacks:
+                            value += player * stack[0].color * -5
+                        else:
+                            for adj_stack in adjacent_stacks:
+                                if adj_stack[-1].type == PieceType.CAPSTONE and adj_stack[-1].color != player:
+                                    value += player * stack[0].color * -5
+            
+            return value
+
+        # The overall evaluation can be fine-tuned by adjusting each heuristic's multiplier
+        value = 10 * heuristic_num_flats() + 5 * heuristic_corner_pieces() + heuristic_penalty_walls()
+
+        return value
     
     def possible_moves(self) -> List:
         moves = []
@@ -202,7 +233,7 @@ class State:
         moves = self.possible_moves()
 
         if depth == 0 or not moves:
-            return player * self.evaluate(self.current_player), None
+            return self.evaluate(self.current_player), None
 
         best_move = None
         max_value = int(-1e9)
