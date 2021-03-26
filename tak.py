@@ -77,6 +77,24 @@ class State:
             return int(1e9)
         elif (result == Result.WHITE_WIN and player == Player.BLACK) or (result == Result.BLACK_WIN and player == Player.BLACK):
             return int(-1e9)
+        
+        # Game is not Finished
+        
+        # More flats on the board means more ways to win
+        value = self.num_flats[-player] - self.num_flats[player]
+
+        # If you control the corners, you have an advantadge
+        corners = [(0, 0), (0, self.board_size), (0, self.board_size), (self.board_size, self.board_size)]
+        corner_value = 5 # TODO: verify this value and search if there is any better value
+
+        for position in corners:
+            corner = self.board[position[0], position[1]]
+            if len(corner) != 0:
+                top_piece = corner[len(corner) - 1]
+                if (top_piece.color == player) and (top_piece.type != PieceType.WALL):
+                    value += corner_value
+                else:
+                    value -= corner_value
 
         return 0
     
