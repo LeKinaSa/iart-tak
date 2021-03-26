@@ -167,17 +167,6 @@ class State:
     def possible_states(self) -> List:
         pass
     
-    def minimax(self, depth: int, pruning: bool):
-        if depth <= 0:
-            return None
-        alpha = 0
-        beta = 0
-        if pruning:
-            alpha = int(-1e9)
-            beta  = int(1e9)
-        (_, move) = self.minimax_max(depth, pruning, alpha, beta)
-        return move
-    
     def negamax(self, depth: int, pruning: bool):
         if depth <= 0:
             return None
@@ -214,7 +203,18 @@ class State:
                     break
 
         return max_value, best_move
-
+    
+    def minimax(self, depth: int, pruning: bool):
+        if depth <= 0:
+            return None
+        alpha = 0
+        beta = 0
+        if pruning:
+            alpha = int(-1e9)
+            beta  = int(1e9)
+        (_, move) = self.minimax_max(depth, pruning, alpha, beta)
+        return move
+    
     def minimax_max(self, depth: int, pruning: bool, alpha: int, beta: int):
         best_move = None
         max_value = int(-1e9)
