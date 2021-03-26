@@ -101,21 +101,22 @@ class State:
     def possible_moves(self) -> List:
         moves = []
 
-        for row in range(self.board_size):
-            for col in range(self.board_size):
-                move_types = [PlaceFlat(Position(row, col)), PlaceWall(Position(row, col)), PlaceCap(Position(row, col))]
+        if self.objective() == Result.NOT_FINISHED:
+            for row in range(self.board_size):
+                for col in range(self.board_size):
+                    move_types = [PlaceFlat(Position(row, col)), PlaceWall(Position(row, col)), PlaceCap(Position(row, col))]
 
-                for direction in directions.values():
-                    move_types.append(MovePiece(Position(row, col), direction))
+                    for direction in directions.values():
+                        move_types.append(MovePiece(Position(row, col), direction))
 
-                    stack_size = len(self.board[row][col])
-                    if stack_size > 1:
-                        for partition in get_partitions_with_leading_zero(stack_size):
-                            move_types.append(SplitStack(Position(row, col), direction, partition))
+                        stack_size = len(self.board[row][col])
+                        if stack_size > 1:
+                            for partition in get_partitions_with_leading_zero(stack_size):
+                                move_types.append(SplitStack(Position(row, col), direction, partition))
 
-                for move in move_types:
-                    if move.is_valid(self):
-                        moves.append(move)
+                    for move in move_types:
+                        if move.is_valid(self):
+                            moves.append(move)
 
         return moves
     
