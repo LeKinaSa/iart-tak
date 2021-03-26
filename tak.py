@@ -173,8 +173,8 @@ class State:
         alpha = 0
         beta = 0
         if pruning:
-            alpha = -99999 # TODO -> start value for max
-            beta  =  99999 # TODO -> start value for min
+            alpha = int(-1e9)
+            beta  = int(1e9)
         (_, move) = self.minimax_max(depth, pruning, alpha, beta)
         return move
     
@@ -217,7 +217,7 @@ class State:
 
     def minimax_max(self, depth: int, pruning: bool, alpha: int, beta: int):
         best_move = None
-        max_value = -99999 # Start Value
+        max_value = int(-1e9)
         
         if depth == 0:
             return self.evaluate(self.current_player)
@@ -225,9 +225,16 @@ class State:
         for move in self.possible_moves():
             new_state = move.play(self)
             
-            game_is_over = False # TODO
-            if game_is_over: # TODO -> if its a loss, it shouldn't return
-                value = 0 # TODO -> verify a good value for win, loss, tie
+            game_result = new_state.objective()
+            if game_result == Result.DRAW:
+                # It is a draw
+                value = 0
+            elif (game_result == Result.WHITE_WIN and new_state.player == Player.WHITE) or (game_result == Result.BLACK_WIN and new_state.player == Player.BLACK):
+                # Current Player Wins
+                value = int(1e9)
+            elif (game_result == Result.WHITE_WIN and new_state.player == Player.BLACK) or (game_result == Result.BLACK_WIN and new_state.player == Player.BLACK):
+                # Current Player Loses
+                value = int(-1e9)
             else:
                 (value, _) = new_state.minimax_min(depth - 1, pruning, alpha, beta)
             
@@ -246,7 +253,7 @@ class State:
     
     def minimax_min(self, depth: int, pruning: bool, alpha: int, beta: int):
         best_move = None
-        min_value = 99999 # Start Value
+        min_value = int(1e9)
         
         if depth == 0:
             return self.evaluate(self.current_player)
@@ -254,9 +261,16 @@ class State:
         for move in self.possible_moves():
             new_state = move.play(state)
             
-            game_is_over = False # TODO
-            if game_is_over: # TODO -> if its a loss, it shouldn't return
-                value = 0 # TODO -> verify a good value for win, loss, tie
+            game_result = new_state.objective()
+            if game_result == Result.DRAW:
+                # It is a draw
+                value = 0
+            elif (game_result == Result.WHITE_WIN and new_state.player == Player.WHITE) or (game_result == Result.BLACK_WIN and new_state.player == Player.BLACK):
+                # Current Player Wins
+                value = int(1e9)
+            elif (game_result == Result.WHITE_WIN and new_state.player == Player.BLACK) or (game_result == Result.BLACK_WIN and new_state.player == Player.BLACK):
+                # Current Player Loses
+                value = int(-1e9)
             else:
                 (value, _) = new_state.minimax_max(depth - 1, pruning, alpha, beta)
             
@@ -327,7 +341,6 @@ class PlaceWall(Move):
     
     def __repr__(self):
         return 'PlaceWall ' + str(self.pos)
-
 
 class PlaceCap(Move):
     def __init__(self, pos: Position):
