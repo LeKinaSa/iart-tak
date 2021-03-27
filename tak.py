@@ -286,27 +286,17 @@ class State:
         return move
     
     def minimax_max(self, depth: int, pruning: bool, alpha: int, beta: int, last_move):
+        moves = self.possible_moves()
+
+        if depth == 0 or not moves:
+            return (self.evaluate(self.current_player, last_move), None)
+        
         best_move = None
         max_value = int(-1e9)
-        
-        if depth == 0:
-            return self.evaluate(self.current_player)
-        
-        for move in self.possible_moves():
+        for move in moves:
             new_state = move.play(self)
             
-            game_result = new_state.objective()
-            if game_result == Result.DRAW:
-                # It is a draw
-                value = 0
-            elif (game_result == Result.WHITE_WIN and new_state.player == Player.WHITE) or (game_result == Result.BLACK_WIN and new_state.player == Player.BLACK):
-                # Current Player Wins
-                value = int(1e9)
-            elif (game_result == Result.WHITE_WIN and new_state.player == Player.BLACK) or (game_result == Result.BLACK_WIN and new_state.player == Player.BLACK):
-                # Current Player Loses
-                value = int(-1e9)
-            else:
-                (value, _) = new_state.minimax_min(depth - 1, pruning, alpha, beta, move)
+            (value, _) = new_state.minimax_min(depth - 1, pruning, alpha, beta, move)
             
             if value > max_value:
                 max_value = value
@@ -322,27 +312,17 @@ class State:
         return (max_value, best_move)
     
     def minimax_min(self, depth: int, pruning: bool, alpha: int, beta: int, last_move):
+        moves = self.possible_moves()
+        
+        if depth == 0 or not moves:
+            return (self.evaluate(self.current_player, last_move), None)
+        
         best_move = None
         min_value = int(1e9)
-        
-        if depth == 0:
-            return self.evaluate(self.current_player)
-        
-        for move in self.possible_moves():
+        for move in moves:
             new_state = move.play(state)
             
-            game_result = new_state.objective()
-            if game_result == Result.DRAW:
-                # It is a draw
-                value = 0
-            elif (game_result == Result.WHITE_WIN and new_state.player == Player.WHITE) or (game_result == Result.BLACK_WIN and new_state.player == Player.BLACK):
-                # Current Player Wins
-                value = int(1e9)
-            elif (game_result == Result.WHITE_WIN and new_state.player == Player.BLACK) or (game_result == Result.BLACK_WIN and new_state.player == Player.BLACK):
-                # Current Player Loses
-                value = int(-1e9)
-            else:
-                (value, _) = new_state.minimax_max(depth - 1, pruning, alpha, beta, move)
+            (value, _) = new_state.minimax_max(depth - 1, pruning, alpha, beta, move)
             
             if value < min_value:
                 min_value = value
