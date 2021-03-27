@@ -68,7 +68,7 @@ class State:
             Player.BLACK: capstones_for_size[board_size]
         }
     
-    def evaluate(self, player: Player, move) -> int: # TODO
+    def evaluate(self, player: Player) -> int:
         result = self.objective()
 
         if result == Result.DRAW:
@@ -137,15 +137,8 @@ class State:
             
             return value
 
-        def heuristic_move_without_capturing(last_move):
-            if type(last_move) is MovePiece:
-                to = last_move.pos_to
-                if len(self.board[to.row][to.col]) <= 1:
-                    return -100
-            return 0
-
         # The overall evaluation can be fine-tuned by adjusting each heuristic's multiplier
-        value = 10 * heuristic_num_flats() + 5 * heuristic_corner_pieces() + heuristic_penalty_walls() + 5 * heuristic_captured_pieces() + heuristic_move_without_capturing(move)
+        value = 10 * heuristic_num_flats() + 5 * heuristic_corner_pieces() + heuristic_penalty_walls() + 5 * heuristic_captured_pieces()
 
         return value
     
@@ -246,21 +239,21 @@ class State:
         if pruning:
             alpha, beta = int(-1e9), int(1e9)
 
-        _, move = self.negamax_recursive(depth, pruning, alpha, beta, 1, None)
+        _, move = self.negamax_recursive(depth, pruning, alpha, beta, 1)
         return move
     
-    def negamax_recursive(self, depth: int, pruning: bool, alpha: int, beta: int, player: int, last_move):
+    def negamax_recursive(self, depth: int, pruning: bool, alpha: int, beta: int, player: int):
         moves = self.possible_moves()
 
         if depth == 0 or not moves:
-            return (self.evaluate(self.current_player, last_move), None)
+            return (self.evaluate(self.current_player), None)
 
         best_move = None
         max_value = int(-1e9)
         for move in moves:
             new_state = move.play(self)
             
-            value, _ = new_state.negamax_recursive(depth - 1, pruning, -beta, -alpha, -player, move)
+            value, _ = new_state.negamax_recursive(depth - 1, pruning, -beta, -alpha, -player)
             value = -value
 
             if value > max_value:
@@ -282,21 +275,21 @@ class State:
         if pruning:
             alpha = int(-1e9)
             beta  = int(1e9)
-        (_, move) = self.minimax_max(depth, pruning, alpha, beta, None)
+        (_, move) = self.minimax_max(depth, pruning, alpha, beta)
         return move
     
-    def minimax_max(self, depth: int, pruning: bool, alpha: int, beta: int, last_move):
+    def minimax_max(self, depth: int, pruning: bool, alpha: int, beta: int):
         moves = self.possible_moves()
 
         if depth == 0 or not moves:
-            return (self.evaluate(self.current_player, last_move), None)
+            return self.evaluate(self.current_player), None
         
         best_move = None
         max_value = int(-1e9)
         for move in moves:
             new_state = move.play(self)
             
-            (value, _) = new_state.minimax_min(depth - 1, pruning, alpha, beta, move)
+            value, _ = new_state.minimax_min(depth - 1, pruning, alpha, beta)
             
             if value > max_value:
                 max_value = value
@@ -309,20 +302,20 @@ class State:
                 if max_value > alpha:
                     alpha = max_value
             
-        return (max_value, best_move)
+        return max_value, best_move
     
-    def minimax_min(self, depth: int, pruning: bool, alpha: int, beta: int, last_move):
+    def minimax_min(self, depth: int, pruning: bool, alpha: int, beta: int):
         moves = self.possible_moves()
         
         if depth == 0 or not moves:
-            return (self.evaluate(self.current_player, last_move), None)
+            return self.evaluate(self.current_player), None
         
         best_move = None
         min_value = int(1e9)
         for move in moves:
             new_state = move.play(state)
             
-            (value, _) = new_state.minimax_max(depth - 1, pruning, alpha, beta, move)
+            value, _ = new_state.minimax_max(depth - 1, pruning, alpha, beta)
             
             if value < min_value:
                 min_value = value
@@ -335,7 +328,7 @@ class State:
                 if min_value < beta:
                     beta = min_value
             
-        return (min_value, best_move)
+        return min_value, best_move
 
 
 
