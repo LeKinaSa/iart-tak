@@ -4,6 +4,7 @@ from enum import Enum, auto
 from copy import deepcopy
 from pprint import pprint
 
+import time
 from utils import Position, get_partitions_with_leading_zero
 
 class PieceType(Enum):
@@ -25,6 +26,12 @@ class Piece:
         types = { PieceType.FLAT: 'f', PieceType.WALL: 'w', PieceType.CAPSTONE: 'c' }
 
         return colors[self.color] + types[self.type]
+    
+    def __hash__(self):
+        return hash((self.color, self.type))
+
+    def __eq__(self, other):
+        return self.color == other.color and self.type == other.type
 
 # State.board[row][col]
 # O-----col----->
@@ -67,6 +74,13 @@ class State:
             Player.WHITE: capstones_for_size[board_size],
             Player.BLACK: capstones_for_size[board_size]
         }
+    
+    def __hash__(self):
+        board_tuple = tuple(tuple(tuple(self.board[row][col]) for col in range(self.board_size) for row in range(self.board_size)))
+        return hash((board_tuple, self.current_player))
+    
+    def __eq__(self, other):
+        return self.board == other.board and self.current_player == other.current_player
     
     def evaluate(self, player: Player) -> int:
         result = self.objective()
@@ -146,21 +160,26 @@ class State:
         moves = []
 
         if self.objective() == Result.NOT_FINISHED:
+            positions = []
+
             for row in range(self.board_size):
                 for col in range(self.board_size):
-                    move_types = [PlaceFlat(Position(row, col)), PlaceWall(Position(row, col)), PlaceCap(Position(row, col))]
+                    positions.append(Position(row, col))
 
-                    for direction in directions.values():
-                        move_types.append(MovePiece(Position(row, col), direction))
+            for position in positions:
+                move_types = [PlaceFlat(position), PlaceWall(position), PlaceCap(position)]
 
-                        stack_size = len(self.board[row][col])
-                        if stack_size > 1:
-                            for partition in get_partitions_with_leading_zero(stack_size):
-                                move_types.append(SplitStack(Position(row, col), direction, partition))
+                for direction in directions.values():
+                    move_types.append(MovePiece(position, direction))
 
-                    for move in move_types:
-                        if move.is_valid(self):
-                            moves.append(move)
+                    stack_size = len(self.board[position.row][position.col])
+                    if stack_size > 1:
+                        for partition in get_partitions_with_leading_zero(stack_size):
+                            move_types.append(SplitStack(position, direction, partition))
+
+                for move in move_types:
+                    if move.is_valid(self):
+                        moves.append(move)
 
         return moves
     
@@ -230,30 +249,65 @@ class State:
     def possible_states(self) -> List:
         pass
     
-    def negamax(self, depth: int, pruning: bool):
+    nm_calls = 0
+    nm_prunings = 0
+    nm_time_possible_moves = 0
+    nm_time_evaluating = 0
+
+    transposition_cache = {}
+    def negamax(self, depth: int, pruning: bool, caching: bool):
         if depth <= 0:
             return None
         
         alpha, beta = 0, 0
 
+        State.nm_calls = 0
+        State.nm_prunings = 0
+        State.nm_time_possible_moves = 0
+        State.nm_time_evaluating = 0
+
         if pruning:
             alpha, beta = int(-1e9), int(1e9)
 
-        _, move = self.negamax_recursive(depth, pruning, alpha, beta, 1)
+        if caching:
+            State.transposition_cache = {}
+
+        _, move = self.negamax_recursive(depth, pruning, caching, alpha, beta, 1)
+        print("Number of positions analysed: ", State.nm_calls)
+        print("Number of cuts: ", State.nm_prunings)
+        print("Time spent calculting possible moves: ", State.nm_time_possible_moves)
+        print("Time spent evaluating: ", State.nm_time_evaluating)
         return move
     
-    def negamax_recursive(self, depth: int, pruning: bool, alpha: int, beta: int, player: int):
+    def negamax_recursive(self, depth: int, pruning: bool, caching: bool, alpha: int, beta: int, player: int):
+        if caching and self in State.transposition_cache:
+            return State.transposition_cache[self]
+
+        start = time.time()
         moves = self.possible_moves()
+        end = time.time()
+        State.nm_time_possible_moves += end - start
+
+        State.nm_calls += 1
 
         if depth == 0 or not moves:
-            return (self.evaluate(self.current_player), None)
+            start = time.time()
+            evaluation = self.evaluate(self.current_player)
+            end = time.time()
+            State.nm_time_evaluating += end - start
+
+            if caching:
+                State.transposition_cache[self] = evaluation, None
+            
+            return evaluation, None
 
         best_move = None
         max_value = int(-1e9)
+
         for move in moves:
             new_state = move.play(self)
             
-            value, _ = new_state.negamax_recursive(depth - 1, pruning, -beta, -alpha, -player)
+            value, _ = new_state.negamax_recursive(depth - 1, pruning, caching, -beta, -alpha, -player)
             value = -value
 
             if value > max_value:
@@ -263,8 +317,12 @@ class State:
             if pruning:
                 alpha = max(alpha, max_value)
                 if alpha >= beta:
+                    State.nm_prunings += 1
                     break
 
+        if caching:
+            State.transposition_cache[self] = max_value, best_move
+        
         return max_value, best_move
     
     def minimax(self, depth: int, pruning: bool):
