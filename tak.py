@@ -133,7 +133,7 @@ class State:
 
                     if len(stack) > 1:
                         top_color = stack[-1].color
-                        value += self.current_player * top_color * len(filter(lambda x: x.color != top_color, stack))
+                        value += self.current_player * top_color * len(list(filter(lambda x: x.color != top_color, stack)))
             
             return value
 
@@ -313,7 +313,7 @@ class State:
         best_move = None
         min_value = int(1e9)
         for move in moves:
-            new_state = move.play(state)
+            new_state = move.play(self)
             
             value, _ = new_state.minimax_max(depth - 1, pruning, alpha, beta)
             
@@ -329,7 +329,6 @@ class State:
                     beta = min_value
             
         return min_value, best_move
-
 
 
 # Pseudo-abstract class
