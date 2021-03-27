@@ -123,9 +123,22 @@ class State:
                                     value += player * stack[0].color * -5
             
             return value
+        
+        def heuristic_captured_pieces() -> int:
+            value = 0
+
+            for row in range(self.board_size):
+                for col in range(self.board_size):
+                    stack = self.board[row][col]
+
+                    if len(stack) > 1:
+                        top_color = stack[-1].color
+                        value += self.current_player * top_color * len(filter(lambda x: x.color != top_color, stack))
+            
+            return value
 
         # The overall evaluation can be fine-tuned by adjusting each heuristic's multiplier
-        value = 10 * heuristic_num_flats() + 5 * heuristic_corner_pieces() + heuristic_penalty_walls()
+        value = 10 * heuristic_num_flats() + 5 * heuristic_corner_pieces() + heuristic_penalty_walls() + 5 * heuristic_captured_pieces()
 
         return value
     
