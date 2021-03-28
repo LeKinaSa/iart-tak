@@ -7,17 +7,17 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
-const texture = new THREE.TextureLoader().load('crate.gif');
-const material = new THREE.MeshBasicMaterial( { map: texture } );
+const darkwood = new THREE.MeshBasicMaterial( { map: new THREE.TextureLoader().load('darkwood.png') } );
+const lightwood = new THREE.MeshBasicMaterial( { map: new THREE.TextureLoader().load('lightwood.png') } );
 
-const geometry = new THREE.BoxGeometry();
-const cube = new THREE.Mesh( geometry, material );
-const cube2 = cube.clone();
-cube2.position.x = 2;
-scene.add( cube );
-scene.add( cube2 );
+const geometry = new THREE.BoxGeometry(0.8, 0.2, 0.8);
+const cube = new THREE.Mesh( geometry, darkwood );
+// scene.add( cube );
 
-camera.position.z = 5;
+
+
+camera.position.z = 10;
+camera.position.y = 3;
 
 const animate = function () {
 	requestAnimationFrame( animate );
@@ -30,3 +30,38 @@ const animate = function () {
 };
 
 animate();
+
+function genBoard() {
+	const darkBase = new THREE.Mesh( new THREE.BoxGeometry(1, 0.2, 1), darkwood );
+	const lightBase = new THREE.Mesh( new THREE.BoxGeometry(1, 0.2, 1), lightwood );
+
+	for (let z = -2; z <= 2; z++) {
+		for (let x = -2; x <= 2; x++) {
+			const base = (z*5 + x) % 2 ? darkBase.clone() : lightBase.clone();
+			base.position.x = x;
+			base.position.y = 0;
+			base.position.z = z;
+			scene.add( base );
+			console.log(x)
+		}
+	}
+}
+
+console.log("Hi")
+
+genBoard();
+
+// setTimeout(() => {for (let z = -2; z <= 2; z++) {
+// 	for (let y = -2; y <= 2; y++) {
+// 		for (let x = -2; x <= 2; x++) {
+// 			const cube2 = cube.clone();
+// 			cube2.position.x = x;
+// 			cube2.position.y = y/4;
+// 			cube2.position.z = z;
+// 			scene.add( cube2 );
+// 			console.log(x)
+// 		}
+// 	}
+// 	}
+
+// }, 2000);
