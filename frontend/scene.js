@@ -20,9 +20,10 @@ const cube = new THREE.Mesh( geometry, darkwood );
 // scene.add( cube );
 
 
-
-camera.position.z = 10;
-camera.position.y = 3;
+camera.position.x =  0;
+camera.position.y = 10;
+camera.position.z =  0;
+camera.lookAt(0, 0, 0);
 
 const animate = function () {
 	requestAnimationFrame( animate );
