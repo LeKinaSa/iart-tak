@@ -7,8 +7,8 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
-const darkwood = new THREE.MeshBasicMaterial( { map: new THREE.TextureLoader().load('darkwood.png') } );
-const lightwood = new THREE.MeshBasicMaterial( { map: new THREE.TextureLoader().load('lightwood.png') } );
+const darkwood = new THREE.MeshBasicMaterial( { map: new THREE.TextureLoader().load('images/darkwood.png') } );
+const lightwood = new THREE.MeshBasicMaterial( { map: new THREE.TextureLoader().load('images/lightwood.png') } );
 
 const geometry = new THREE.BoxGeometry(0.8, 0.2, 0.8);
 const cube = new THREE.Mesh( geometry, darkwood );
