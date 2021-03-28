@@ -3,6 +3,7 @@ from typing import List
 from enum import Enum, auto
 from copy import deepcopy
 from pprint import pprint
+import time
 
 from utils import Position, get_partitions_with_leading_zero
 
@@ -25,6 +26,12 @@ class Piece:
         types = { PieceType.FLAT: 'f', PieceType.WALL: 'w', PieceType.CAPSTONE: 'c' }
 
         return colors[self.color] + types[self.type]
+    
+    def __hash__(self):
+        return hash((self.color, self.type))
+
+    def __eq__(self, other):
+        return self.color == other.color and self.type == other.type
 
 # State.board[row][col]
 # O-----col----->
@@ -68,7 +75,18 @@ class State:
             Player.BLACK: capstones_for_size[board_size]
         }
     
-    def evaluate(self, player: Player) -> int: # TODO
+    def __hash__(self):
+        board_tuple = tuple(tuple(tuple(self.board[row][col]) for col in range(self.board_size) for row in range(self.board_size)))
+        return hash((board_tuple, self.current_player))
+    
+    def __eq__(self, other):
+        return self.board == other.board and self.current_player == other.current_player
+    
+    def evaluate(self, player: Player) -> int:
+        '''
+        Returns a number representing the value of this game state for the given player.
+        '''
+
         result = self.objective()
 
         if result == Result.DRAW:
@@ -77,23 +95,131 @@ class State:
             return int(1e9)
         elif (result == Result.WHITE_WIN and player == Player.BLACK) or (result == Result.BLACK_WIN and player == Player.BLACK):
             return int(-1e9)
+        
+        def heuristic_num_flats() -> int:
+            value = 0
 
-        return 0
+            for row in range(self.board_size):
+                for col in range(self.board_size):
+                    stack = self.board[row][col]
+                    if stack and stack[-1].type == PieceType.FLAT:
+                        # Positive if stack is controlled by the player, negative otherwise
+                        value += player * stack[-1].color
+            
+            return value
+        
+        def heuristic_corner_pieces() -> int:
+            value = 0
+            corners = [Position(0, 0), Position(0, self.board_size - 1), Position(self.board_size - 1, 0), Position(self.board_size - 1, self.board_size - 1)]
+
+            for position in corners:
+                stack = self.board[position.row][position.col]
+                if stack and stack[-1].type != PieceType.WALL:
+                    value += player * stack[-1].color
+
+            return value
+
+        def heuristic_penalty_walls() -> int:
+            value = 0
+
+            for row in range(self.board_size):
+                for col in range(self.board_size):
+                    stack = self.board[row][col]
+                    if len(stack) == 1 and stack[0].type == PieceType.WALL:
+                        adjacent = [Position(row, col) + direction for direction in directions.values()]
+                        adjacent = filter(lambda x: x.is_within_bounds(0, self.board_size - 1), adjacent)
+
+                        # Obtain adjacent stacks which are not empty
+                        adjacent_stacks = [self.board[pos.row][pos.col] for pos in adjacent]
+                        adjacent_stacks = filter(lambda x: x, adjacent_stacks)
+
+                        if not adjacent_stacks:
+                            value += player * stack[0].color * -5
+                        else:
+                            for adj_stack in adjacent_stacks:
+                                if adj_stack[-1].type == PieceType.CAPSTONE and adj_stack[-1].color != player:
+                                    value += player * stack[0].color * -5
+            
+            return value
+        
+        def heuristic_captured_pieces() -> int:
+            '''Calculates the number of opposing pieces each player has captured'''
+            value = 0
+
+            for row in range(self.board_size):
+                for col in range(self.board_size):
+                    stack = self.board[row][col]
+
+                    if len(stack) > 1:
+                        top_color = stack[-1].color
+                        value += self.current_player * top_color * len(list(filter(lambda x: x.color != top_color, stack)))
+            
+            return value
+
+        def heuristic_nearness_to_optimal_road() -> int:
+            '''Calculates the maximum number of pieces in a single row or column for each player (i. e. the nearness to an optimal road)'''
+            value_player = 0
+            value_opponent = 0
+
+            for i in range(self.board_size):
+                count_player = 0
+                count_opponent = 0
+                
+                # Get maximum number of pieces along row
+                for j in range(self.board_size):
+                    stack = self.board[i][j]
+                    if stack:
+                        if stack[-1].color == self.current_player:
+                            count_player += 1
+                        else:
+                            count_opponent += 1
+                
+                value_player = max(value_player, count_player)
+                value_opponent = max(value_opponent, count_opponent)
+
+                # Get maximum number of pieces along column
+                for j in range(self.board_size):
+                    stack = self.board[j][i]
+                    if stack:
+                        if stack[-1].color == self.current_player:
+                            count_player += 1
+                        else:
+                            count_opponent += 1
+                
+                value_player = max(value_player, count_player)
+                value_opponent = max(value_opponent, count_opponent)
+
+            return value_player - value_opponent
+        
+
+        # The overall evaluation can be fine-tuned by adjusting each heuristic's multiplier
+        value = 10 * heuristic_num_flats() + 5 * heuristic_corner_pieces() + heuristic_penalty_walls() + 5 * heuristic_captured_pieces() + \
+            3 * heuristic_nearness_to_optimal_road()
+
+        return value
     
     def possible_moves(self) -> List:
+        '''Returns a list of all valid moves for this game state.'''
+
         moves = []
 
-        for row in range(self.board_size):
-            for col in range(self.board_size):
-                move_types = [PlaceFlat(Position(row, col)), PlaceWall(Position(row, col)), PlaceCap(Position(row, col))]
+        if self.objective() == Result.NOT_FINISHED:
+            positions = []
+
+            for row in range(self.board_size):
+                for col in range(self.board_size):
+                    positions.append(Position(row, col))
+
+            for position in positions:
+                move_types = [PlaceFlat(position), PlaceWall(position), PlaceCap(position)]
 
                 for direction in directions.values():
-                    move_types.append(MovePiece(Position(row, col), direction))
+                    move_types.append(MovePiece(position, direction))
 
-                    stack_size = len(self.board[row][col])
+                    stack_size = len(self.board[position.row][position.col])
                     if stack_size > 1:
                         for partition in get_partitions_with_leading_zero(stack_size):
-                            move_types.append(SplitStack(Position(row, col), direction, partition))
+                            move_types.append(SplitStack(position, direction, partition))
 
                 for move in move_types:
                     if move.is_valid(self):
@@ -167,9 +293,167 @@ class State:
     def possible_states(self) -> List:
         pass
     
-    def play_move(self, move): # -> State
-        pass
+    # Statistics for the negamax algorithm
+    nm_calls = 0
+    nm_prunings = 0
+    nm_cache_hits = 0
+    nm_time_possible_moves = 0
+    nm_time_evaluating = 0
 
+    transposition_cache = {}
+    def negamax(self, depth: int, pruning: bool = False, caching: bool = False, statistics: bool = False):
+        '''
+        Implementation of the negamax algorithm, a variant of minimax that takes advantage of the
+        zero-sum property of two-player adversarial games. Includes parameters for specifying the
+        maximum depth, whether alpha-beta pruning is used, whether a transposition cache is used to
+        avoid exploring the same positions more than once and whether statistics about the algorithm
+        are printed to the console.
+        '''
+
+        if depth <= 0:
+            return None
+        
+        alpha, beta = 0, 0
+        if pruning:
+            alpha, beta = int(-1e9), int(1e9)
+
+        if caching:
+            State.transposition_cache = {}
+
+        if statistics:
+            State.nm_calls = 0
+            State.nm_prunings = 0
+            State.nm_cache_hits = 0
+            State.nm_time_possible_moves = 0
+            State.nm_time_evaluating = 0
+
+        _, move = self.negamax_recursive(depth, pruning, caching, statistics, alpha, beta, 1)
+
+        if statistics:
+            print("Number of positions analysed:", State.nm_calls)
+            print("Number of cuts:", State.nm_prunings)
+            print("Number of cache hits:", State.nm_cache_hits)
+            print("Time spent calculting possible moves:", State.nm_time_possible_moves)
+            print("Time spent evaluating:", State.nm_time_evaluating)
+
+        return move
+    
+    def negamax_recursive(self, depth: int, pruning: bool, caching: bool, statistics: bool, alpha: int, beta: int, player: int):
+        if statistics:
+            State.nm_calls += 1
+        
+        if caching and self in State.transposition_cache:
+            State.nm_cache_hits += 1
+            return State.transposition_cache[self]
+
+        start = time.time()
+        moves = self.possible_moves()
+        end = time.time()
+
+        if statistics:
+            State.nm_time_possible_moves += end - start
+
+        # Maximum depth has been reached or no possible moves (game has ended): run evaluation function
+        if depth == 0 or not moves:
+            start = time.time()
+            evaluation = self.evaluate(self.current_player)
+            end = time.time()
+
+            if statistics:
+                State.nm_time_evaluating += end - start
+
+            if caching:
+                State.transposition_cache[self] = evaluation, None
+            
+            return evaluation, None
+
+        best_move = None
+        max_value = int(-1e9)
+
+        for move in moves:
+            new_state = move.play(self)
+            
+            value, _ = new_state.negamax_recursive(depth - 1, pruning, caching, statistics, -beta, -alpha, -player)
+            value = -value
+
+            if value > max_value:
+                max_value = value
+                best_move = move
+            
+            if pruning:
+                alpha = max(alpha, max_value)
+                if alpha >= beta:
+                    if statistics:
+                        State.nm_prunings += 1
+                    break
+
+        if caching:
+            State.transposition_cache[self] = max_value, best_move
+        
+        return max_value, best_move
+    
+    def minimax(self, depth: int, pruning: bool):
+        if depth <= 0:
+            return None
+        alpha = 0
+        beta = 0
+        if pruning:
+            alpha = int(-1e9)
+            beta  = int(1e9)
+        (_, move) = self.minimax_max(depth, pruning, alpha, beta)
+        return move
+    
+    def minimax_max(self, depth: int, pruning: bool, alpha: int, beta: int):
+        moves = self.possible_moves()
+
+        if depth == 0 or not moves:
+            return self.evaluate(self.current_player), None
+        
+        best_move = None
+        max_value = int(-1e9)
+        for move in moves:
+            new_state = move.play(self)
+            
+            value, _ = new_state.minimax_min(depth - 1, pruning, alpha, beta)
+            
+            if value > max_value:
+                max_value = value
+                best_move = move
+            
+            if pruning:
+                if max_value >= beta:
+                    return (max_value, move)
+        
+                if max_value > alpha:
+                    alpha = max_value
+            
+        return max_value, best_move
+    
+    def minimax_min(self, depth: int, pruning: bool, alpha: int, beta: int):
+        moves = self.possible_moves()
+        
+        if depth == 0 or not moves:
+            return self.evaluate(self.current_player), None
+        
+        best_move = None
+        min_value = int(1e9)
+        for move in moves:
+            new_state = move.play(self)
+            
+            value, _ = new_state.minimax_max(depth - 1, pruning, alpha, beta)
+            
+            if value < min_value:
+                min_value = value
+                best_move = move
+            
+            if pruning:
+                if min_value <= alpha:
+                    return (min_value, move)
+    
+                if min_value < beta:
+                    beta = min_value
+            
+        return min_value, best_move
 
 
 # Pseudo-abstract class
@@ -224,7 +508,6 @@ class PlaceWall(Move):
     
     def __repr__(self):
         return 'PlaceWall ' + str(self.pos)
-
 
 class PlaceCap(Move):
     def __init__(self, pos: Position):
@@ -286,7 +569,7 @@ class MovePiece(Move):
 
         stack = state_copy.board[self.pos.row][self.pos.col]
         piece = stack[-1]
-        stack_to = state_copy.board[self.pos_to.col][self.pos_to.col]
+        stack_to = state_copy.board[self.pos_to.row][self.pos_to.col]
 
         if piece.type == PieceType.CAPSTONE and stack_to and stack_to[-1].type == PieceType.WALL:
             stack_to[-1].type = PieceType.FLAT
@@ -294,6 +577,7 @@ class MovePiece(Move):
         stack_to.append(piece)
         stack.pop()
 
+        state_copy.current_player = -state_copy.current_player
         return state_copy
     
     def __repr__(self):
@@ -347,6 +631,7 @@ class SplitStack(Move):
             
             stack_to += stack_slice
 
+        state_copy.current_player = -state_copy.current_player
         return state_copy
     
     def __repr__(self):
