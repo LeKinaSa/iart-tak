@@ -143,6 +143,7 @@ class State:
             return value
         
         def heuristic_captured_pieces() -> int:
+            '''Calculates the number of opposing pieces each player has captured'''
             value = 0
 
             for row in range(self.board_size):
@@ -155,15 +156,50 @@ class State:
             
             return value
 
+        def heuristic_nearness_to_optimal_road() -> int:
+            '''Calculates the maximum number of pieces in a single row or column for each player (i. e. the nearness to an optimal road)'''
+            value_player = 0
+            value_opponent = 0
+
+            for i in range(self.board_size):
+                count_player = 0
+                count_opponent = 0
+                
+                # Get maximum number of pieces along row
+                for j in range(self.board_size):
+                    stack = self.board[i][j]
+                    if stack:
+                        if stack[-1].color == self.current_player:
+                            count_player += 1
+                        else:
+                            count_opponent += 1
+                
+                value_player = max(value_player, count_player)
+                value_opponent = max(value_opponent, count_opponent)
+
+                # Get maximum number of pieces along column
+                for j in range(self.board_size):
+                    stack = self.board[j][i]
+                    if stack:
+                        if stack[-1].color == self.current_player:
+                            count_player += 1
+                        else:
+                            count_opponent += 1
+                
+                value_player = max(value_player, count_player)
+                value_opponent = max(value_opponent, count_opponent)
+
+            return value_player - value_opponent
+        
+
         # The overall evaluation can be fine-tuned by adjusting each heuristic's multiplier
-        value = 10 * heuristic_num_flats() + 5 * heuristic_corner_pieces() + heuristic_penalty_walls() + 5 * heuristic_captured_pieces()
+        value = 10 * heuristic_num_flats() + 5 * heuristic_corner_pieces() + heuristic_penalty_walls() + 5 * heuristic_captured_pieces() + \
+            3 * heuristic_nearness_to_optimal_road()
 
         return value
     
     def possible_moves(self) -> List:
-        '''
-        Returns a list of all valid moves for this game state.
-        '''
+        '''Returns a list of all valid moves for this game state.'''
 
         moves = []
 
