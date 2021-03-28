@@ -3,8 +3,8 @@ from typing import List
 from enum import Enum, auto
 from copy import deepcopy
 from pprint import pprint
-
 import time
+
 from utils import Position, get_partitions_with_leading_zero
 
 class PieceType(Enum):
@@ -83,6 +83,10 @@ class State:
         return self.board == other.board and self.current_player == other.current_player
     
     def evaluate(self, player: Player) -> int:
+        '''
+        Returns a number representing the value of this game state for the given player.
+        '''
+
         result = self.objective()
 
         if result == Result.DRAW:
@@ -157,6 +161,10 @@ class State:
         return value
     
     def possible_moves(self) -> List:
+        '''
+        Returns a list of all valid moves for this game state.
+        '''
+
         moves = []
 
         if self.objective() == Result.NOT_FINISHED:
@@ -249,52 +257,74 @@ class State:
     def possible_states(self) -> List:
         pass
     
+    # Statistics for the negamax algorithm
     nm_calls = 0
     nm_prunings = 0
+    nm_cache_hits = 0
     nm_time_possible_moves = 0
     nm_time_evaluating = 0
 
     transposition_cache = {}
-    def negamax(self, depth: int, pruning: bool, caching: bool):
+    def negamax(self, depth: int, pruning: bool = False, caching: bool = False, statistics: bool = False):
+        '''
+        Implementation of the negamax algorithm, a variant of minimax that takes advantage of the
+        zero-sum property of two-player adversarial games. Includes parameters for specifying the
+        maximum depth, whether alpha-beta pruning is used, whether a transposition cache is used to
+        avoid exploring the same positions more than once and whether statistics about the algorithm
+        are printed to the console.
+        '''
+
         if depth <= 0:
             return None
         
         alpha, beta = 0, 0
-
-        State.nm_calls = 0
-        State.nm_prunings = 0
-        State.nm_time_possible_moves = 0
-        State.nm_time_evaluating = 0
-
         if pruning:
             alpha, beta = int(-1e9), int(1e9)
 
         if caching:
             State.transposition_cache = {}
 
-        _, move = self.negamax_recursive(depth, pruning, caching, alpha, beta, 1)
-        print("Number of positions analysed: ", State.nm_calls)
-        print("Number of cuts: ", State.nm_prunings)
-        print("Time spent calculting possible moves: ", State.nm_time_possible_moves)
-        print("Time spent evaluating: ", State.nm_time_evaluating)
+        if statistics:
+            State.nm_calls = 0
+            State.nm_prunings = 0
+            State.nm_cache_hits = 0
+            State.nm_time_possible_moves = 0
+            State.nm_time_evaluating = 0
+
+        _, move = self.negamax_recursive(depth, pruning, caching, statistics, alpha, beta, 1)
+
+        if statistics:
+            print("Number of positions analysed:", State.nm_calls)
+            print("Number of cuts:", State.nm_prunings)
+            print("Number of cache hits:", State.nm_cache_hits)
+            print("Time spent calculting possible moves:", State.nm_time_possible_moves)
+            print("Time spent evaluating:", State.nm_time_evaluating)
+
         return move
     
-    def negamax_recursive(self, depth: int, pruning: bool, caching: bool, alpha: int, beta: int, player: int):
+    def negamax_recursive(self, depth: int, pruning: bool, caching: bool, statistics: bool, alpha: int, beta: int, player: int):
+        if statistics:
+            State.nm_calls += 1
+        
         if caching and self in State.transposition_cache:
+            State.nm_cache_hits += 1
             return State.transposition_cache[self]
 
         start = time.time()
         moves = self.possible_moves()
         end = time.time()
-        State.nm_time_possible_moves += end - start
 
-        State.nm_calls += 1
+        if statistics:
+            State.nm_time_possible_moves += end - start
 
+        # Maximum depth has been reached or no possible moves (game has ended): run evaluation function
         if depth == 0 or not moves:
             start = time.time()
             evaluation = self.evaluate(self.current_player)
             end = time.time()
-            State.nm_time_evaluating += end - start
+
+            if statistics:
+                State.nm_time_evaluating += end - start
 
             if caching:
                 State.transposition_cache[self] = evaluation, None
@@ -307,7 +337,7 @@ class State:
         for move in moves:
             new_state = move.play(self)
             
-            value, _ = new_state.negamax_recursive(depth - 1, pruning, caching, -beta, -alpha, -player)
+            value, _ = new_state.negamax_recursive(depth - 1, pruning, caching, statistics, -beta, -alpha, -player)
             value = -value
 
             if value > max_value:
@@ -317,7 +347,8 @@ class State:
             if pruning:
                 alpha = max(alpha, max_value)
                 if alpha >= beta:
-                    State.nm_prunings += 1
+                    if statistics:
+                        State.nm_prunings += 1
                     break
 
         if caching:
