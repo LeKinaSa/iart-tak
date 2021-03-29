@@ -152,7 +152,7 @@ class State:
 
                     if len(stack) > 1:
                         top_color = stack[-1].color
-                        value += self.current_player * top_color * len(list(filter(lambda x: x.color != top_color, stack)))
+                        value += player * top_color * len(list(filter(lambda x: x.color != top_color, stack)))
             
             return value
 
@@ -169,7 +169,7 @@ class State:
                 for j in range(self.board_size):
                     stack = self.board[i][j]
                     if stack:
-                        if stack[-1].color == self.current_player:
+                        if stack[-1].color == player:
                             count_player += 1
                         else:
                             count_opponent += 1
@@ -177,11 +177,14 @@ class State:
                 value_player = max(value_player, count_player)
                 value_opponent = max(value_opponent, count_opponent)
 
+                count_player = 0
+                count_opponent = 0
+
                 # Get maximum number of pieces along column
                 for j in range(self.board_size):
                     stack = self.board[j][i]
                     if stack:
-                        if stack[-1].color == self.current_player:
+                        if stack[-1].color == player:
                             count_player += 1
                         else:
                             count_opponent += 1
@@ -211,21 +214,19 @@ class State:
                     positions.append(Position(row, col))
 
             for position in positions:
-                move_types = [PlaceFlat(position), PlaceWall(position), PlaceCap(position)]
+                stack_size = len(self.board[position.row][position.col])
 
-                for direction in directions.values():
-                    move_types.append(MovePiece(position, direction))
+                if stack_size == 0:
+                    moves += [PlaceFlat(position), PlaceWall(position), PlaceCap(position)]
+                else:
+                    for direction in directions.values():
+                        moves.append(MovePiece(position, direction))
 
-                    stack_size = len(self.board[position.row][position.col])
-                    if stack_size > 1:
-                        for partition in get_partitions_with_leading_zero(stack_size):
-                            move_types.append(SplitStack(position, direction, partition))
+                        if stack_size > 1:
+                            for partition in get_partitions_with_leading_zero(stack_size):
+                                moves.append(SplitStack(position, direction, partition))
 
-                for move in move_types:
-                    if move.is_valid(self):
-                        moves.append(move)
-
-        return moves
+        return list(filter(lambda move: move.is_valid(self), moves))
     
     def objective(self) -> Result:
         '''Checks if the game is finished, returning the game's result (WHITE_WIN, DRAW or BLACK_WIN) or NOT_FINISHED otherwise.'''
@@ -327,9 +328,12 @@ class State:
             State.nm_time_possible_moves = 0
             State.nm_time_evaluating = 0
 
+        start = time.time()
         _, move = self.negamax_recursive(depth, pruning, caching, statistics, alpha, beta, 1)
+        end = time.time()
 
         if statistics:
+            print("Total execution time:", end - start)
             print("Number of positions analysed:", State.nm_calls)
             print("Number of cuts:", State.nm_prunings)
             print("Number of cache hits:", State.nm_cache_hits)
@@ -373,8 +377,7 @@ class State:
         for move in moves:
             new_state = move.play(self)
             
-            value, _ = new_state.negamax_recursive(depth - 1, pruning, caching, statistics, -beta, -alpha, -player)
-            value = -value
+            value = -new_state.negamax_recursive(depth - 1, pruning, caching, statistics, -beta, -alpha, -player)[0]
 
             if value > max_value:
                 max_value = value
