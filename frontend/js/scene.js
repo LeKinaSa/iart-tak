@@ -5,6 +5,12 @@ const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerH
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
+
+function updateRenderWindow() {
+	renderer.setSize(window.innerWidth, window.innerHeight);
+}
+window.addEventListener('resize', updateRenderWindow);
+
 document.body.appendChild(renderer.domElement);
 
 const textureDarkWood = new THREE.TextureLoader().load('images/darkwood.png');
