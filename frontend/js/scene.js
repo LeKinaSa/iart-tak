@@ -49,7 +49,7 @@ function animate() {
 
 animate();
 
-function genBoard(size = 5) {
+function generateBoard(size = 5) {
 	const darkBase = new THREE.Mesh(new THREE.BoxGeometry(1, 0.2, 1), darkwood);
 	const lightBase = new THREE.Mesh(new THREE.BoxGeometry(1, 0.2, 1), lightwood);
 
@@ -73,34 +73,42 @@ function genBoard(size = 5) {
 	}
 }
 
-//wf, ww, wc, bf, bw, bc
-function genPieceStack(x, z, stack) {
-	let pieces = new Map();
-	pieces.set('bf', new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.8), darkmarble));
-	pieces.set('wf', new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.8), lightmarble));
+const pieceGroup = new THREE.Group();
 
-	pieces.set('bw', new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.2), darkmarble));
-	pieces.set('ww', new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.2), lightmarble));
-	
-	pieces.set('bc', new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.8, 16), darkmarble));
-	pieces.set('wc', new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.8, 16), lightmarble));	
+function addPieces(board) {
+	pieceGroup.clear();
 
+	for (let row = 0; row < board.length; ++row) {
+		for (let col = 0; col < board.length; ++col) {
+			let stack = board[row][col];
+		}
+	}
+}
+
+let pieceMap = new Map();
+pieceMap.set('bf', new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.8), darkmarble));
+pieceMap.set('wf', new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.8), lightmarble));
+
+pieceMap.set('bw', new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.2), darkmarble));
+pieceMap.set('ww', new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.2), lightmarble));
+
+pieceMap.set('bc', new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.8, 16), darkmarble));
+pieceMap.set('wc', new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.8, 16), lightmarble));	
+
+function addStack(x, z, stack) {
 	for (let i = 0; i < stack.length; i++) {
 		let piece = stack[i];
 		let type = stack[i][1];
 
-		const base = pieces.get(piece).clone();
-		base.position.x = x;
-		base.position.y = (i + 1) * 0.2 + (type !== 'f' ? 0.3 : 0);
-		base.position.z = z;
-		scene.add( base );
+		const pieceGeometry = pieceMap.get(piece).clone();
+		pieceGeometry.position.x = x;
+		pieceGeometry.position.y = (i + 1) * 0.2 + (type !== 'f' ? 0.3 : 0);
+		pieceGeometry.position.z = z;
+		pieceGroup.add(pieceGeometry);
 	}
 }
 
-console.log("Hi")
-
-genBoard();
-genPieceStack(-2, -2, ['bf', 'bf', 'bf', 'wc']);
+generateBoard();
 // setTimeout(() => {for (let z = -2; z <= 2; z++) {
 // 	for (let y = -2; y <= 2; y++) {
 // 		for (let x = -2; x <= 2; x++) {
@@ -131,3 +139,86 @@ xhr.onreadystatechange = function () {
 };
 var data = JSON.stringify({"numbers" : [1, 2, 3, 4]});
 xhr.send(data);
+
+/*
+ *  Code related to User Interface controls
+ */
+
+const gameTypeControls = document.getElementById('gameTypeControls');
+gameTypeControls.classList.remove("d-none");
+
+function onGameTypeSubmitted(event) {
+	event.preventDefault();
+
+	let request = new XMLHttpRequest();
+	let url = 'http://localhost:8001/start_game';
+	request.open('POST', url, true);
+	request.setRequestHeader('Content-Type', 'application/json');
+	request.addEventListener('load', (event) => {
+		event.preventDefault();
+		let response = JSON.parse(request.responseText);
+		// TODO: update board
+		console.log(response);
+	});
+
+	let size = Number.parseInt(document.getElementById('boardSize').value);
+	let whiteType = document.getElementById('whiteType').value;
+	let blackType = document.getElementById('blackType').value;
+
+	let data = JSON.stringify({size: size, white_type: whiteType, black_type: blackType});
+	request.send(data);
+}
+
+gameTypeControls.querySelector('form').addEventListener('submit', onGameTypeSubmitted);
+
+const moveTypes = {
+	PlaceFlat: {params: ['pos']},
+	PlaceWall: {params: ['pos']},
+	PlaceCap: {params: ['pos']},
+	MovePiece: {params: ['pos', 'direction']},
+	SplitStack: {params: ['pos', 'direction', 'split']}
+};
+
+function showParams(params) {
+	let paramsDiv = document.getElementById('moveParams');
+	paramsDiv.innerHTML = "";
+
+	for (let param of params) {
+		if (param === 'pos') {
+			let posDiv = document.createElement('div');
+			posDiv.classList.add('mb-2');
+			posDiv.innerHTML = '<label class="form-label" for="row">Row</label><input class="form-control"' +
+					'type="number" id="row" min="1" max="5" value="1">';
+			paramsDiv.appendChild(posDiv);
+		}
+		else if (param === 'direction') {
+
+		}
+	}
+}
+
+function showMoveTypes(possibleMoves) {
+	let possibleTypes = new Set();
+
+	for (let move of possibleMoves) {
+		if (moveTypes[move.type] != null) {
+			possibleTypes.add(move.type);
+		}
+	}
+
+	let moveTypeSelect = document.getElementById('moveType');
+	moveTypeSelect.innerHTML = "";
+
+	for (let type of possibleTypes) {
+		let option = document.createElement('option');
+		option.innerHTML = type;
+		option.value = type;
+		moveTypeSelect.appendChild(option);
+	}
+
+	showParams(moveTypes[moveTypeSelect.value].params);
+
+	moveTypeSelect.addEventListener('change', (event) => {
+		showParams(moveTypes[event.target.value].params);
+	});
+}
