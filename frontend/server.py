@@ -3,7 +3,7 @@ from http import HTTPStatus
 import json
 import time
 
-def _sum(l):
+def _sum(l : dict) -> dict:
     return {"result" : sum(l["numbers"])}
 
 # Add your endpoints here
