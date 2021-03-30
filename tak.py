@@ -592,7 +592,7 @@ class MovePiece(Move):
         return "MovePiece " + str(self.pos) + " -> " + str(self.pos_to)
 
 class SplitStack(Move):
-    def __init__(self, pos: Position, direction, split: List[int]):
+    def __init__(self, pos: Position, direction: Position, split: List[int]):
         self.pos = pos
         self.direction = direction
         self.split = split
@@ -644,6 +644,3 @@ class SplitStack(Move):
     
     def __repr__(self):
         return "SplitStack " + str(self.pos) + " | " + str(self.direction) + " | " + str(self.split)
-
-state = State()
-pprint(state.possible_moves())

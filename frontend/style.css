@@ -4,3 +4,9 @@
     left: 1em;
     top: 1em;
 }
+
+.information {
+    position: absolute;
+    right: 1em;
+    top: 1em;
+}

@@ -108,7 +108,6 @@ function addStack(x, z, stack) {
 	}
 }
 
-generateBoard();
 // setTimeout(() => {for (let z = -2; z <= 2; z++) {
 // 	for (let y = -2; y <= 2; y++) {
 // 		for (let x = -2; x <= 2; x++) {
@@ -156,9 +155,18 @@ function onGameTypeSubmitted(event) {
 	request.setRequestHeader('Content-Type', 'application/json');
 	request.addEventListener('load', (event) => {
 		event.preventDefault();
+
 		let response = JSON.parse(request.responseText);
-		// TODO: update board
 		console.log(response);
+
+		generateBoard(response['board'].length);
+
+		document.getElementById('whiteNormalPieces').innerHTML = response['num_flats'][1];
+		document.getElementById('whiteCapstones').innerHTML = response['num_caps'][1];
+		document.getElementById('blackNormalPieces').innerHTML = response['num_flats'][-1];
+		document.getElementById('blackCapstones').innerHTML = response['num_caps'][-1];
+
+		gameTypeControls.classList.add('d-none');
 	});
 
 	let size = Number.parseInt(document.getElementById('boardSize').value);
