@@ -3,12 +3,41 @@ from http import HTTPStatus
 
 import json
 
+from tak import State
+
+state = None
+white_type = None
+black_type = None
+possible_moves = []
+
 def _sum(l : dict) -> dict:
     return {"result" : sum(l["numbers"])}
 
+def start_game(params: dict) -> dict:
+    global state, white_type, black_type
+
+    state = State(params['size'])
+    white_type = params['white_type']
+    black_type = params['black_type']
+
+    print(white_type, black_type)
+
+    return state.to_dict()
+
+def make_move(params: dict) -> dict:
+    global state, possible_moves
+    
+    if possible_moves:
+        move = possible_moves[params['move_idx']]
+        state = move.play(state)
+    
+    return state.to_dict()
+
 # Add your endpoints here
 endpoints = {
-    "/sum" : _sum
+    "/sum" : _sum,
+    "/start_game": start_game,
+    "/make_move": make_move
 }
 
 
@@ -32,6 +61,7 @@ class _RequestHandler(BaseHTTPRequestHandler):
         if self.path in endpoints:
             res = endpoints[self.path](message)
         else:
+            print("Path {self.path} was not expected")
             res = {}
 
         self._set_headers()

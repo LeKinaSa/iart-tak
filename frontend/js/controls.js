@@ -1,6 +1,30 @@
 
-const gameTypeControls = document.getElementById('moveControls');
+const gameTypeControls = document.getElementById('gameTypeControls');
 gameTypeControls.classList.remove("d-none");
+
+function onGameTypeSubmitted(event) {
+	event.preventDefault();
+
+	let request = new XMLHttpRequest();
+	let url = 'http://localhost:8001/start_game';
+	request.open('POST', url, true);
+	request.setRequestHeader('Content-Type', 'application/json');
+	request.addEventListener('load', (event) => {
+		event.preventDefault();
+		let response = JSON.parse(request.responseText);
+		// TODO: update board
+		console.log(response);
+	});
+
+	let size = Number.parseInt(document.getElementById('boardSize').value);
+	let whiteType = document.getElementById('whiteType').value;
+	let blackType = document.getElementById('blackType').value;
+
+	let data = JSON.stringify({size: size, white_type: whiteType, black_type: blackType});
+	request.send(data);
+}
+
+gameTypeControls.querySelector('form').addEventListener('submit', onGameTypeSubmitted);
 
 const moveTypes = {
 	PlaceFlat: {params: ['pos']},

@@ -454,6 +454,14 @@ class State:
                     beta = min_value
             
         return min_value, best_move
+    
+    def to_dict(self) -> dict:
+        return {
+            'board': self.board,
+            'current_player': self.current_player,
+            'num_flats': self.num_flats,
+            'num_caps': self.num_caps
+        }
 
 
 # Pseudo-abstract class
@@ -592,7 +600,7 @@ class SplitStack(Move):
     def is_valid(self, state: State) -> bool:
         stack = state.board[self.pos.row][self.pos.col]
 
-        if len(stack) <= 1 or stack[-1].color != state.current_player or len(stack) != sum(self.split):
+        if len(stack) <= 1 or len(self.split) <= 1 or stack[-1].color != state.current_player or len(stack) != sum(self.split):
             return False
         
         stack_copy = deepcopy(stack)

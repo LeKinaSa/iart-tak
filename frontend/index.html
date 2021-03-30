@@ -14,17 +14,19 @@
 		<link rel="stylesheet" href="style.css">
 	</head>
 	<body>
-		<div class="d-none controls bg-light p-3" id="gameTypeControls" >
+		<div class="d-none controls bg-light p-3" id="gameTypeControls">
 			<form>
 				<h4 class="mb-3">Choose game type</h4>
+				<label for="boardSize" class="h5 form-label">Board size</label>
+				<input type="number" class="form-control mb-2" id="boardSize" min="3" max="5" value="4">
 				<label for="whiteType" class="h5 form-label">White</label>
-				<select class="form-select mb-2" id="whiteType" name="whiteType">
+				<select class="form-select mb-2" id="whiteType">
 					<option selected value="human">Human</option>
 					<option value="ai1">AI Level 1</option>
 					<option value="ai2">AI Level 2</option>
 				</select>
 				<label for="whiteType" class="h5 form-label">Black</label>
-				<select class="form-select mb-3" id="blackType" name="blackType">
+				<select class="form-select mb-3" id="blackType">
 					<option selected value="human">Human</option>
 					<option value="ai1">AI Level 1</option>
 					<option value="ai2">AI Level 2</option>
@@ -33,11 +35,11 @@
 			</form>
 		</div>
 
-		<div class="d-none controls bg-light p-3" id="moveControls" >
+		<div class="d-none controls bg-light p-3" id="moveControls">
 			<form>
 				<h4 class="mb-3">Choose move</h4>
 				<label for="moveType" class="h5 form-label">Move type</label>
-				<select class="form-select mb-2" id="moveType" name="moveType">
+				<select class="form-select mb-2" id="moveType">
 				</select>
 				<div id="moveParams">
 				</div>
