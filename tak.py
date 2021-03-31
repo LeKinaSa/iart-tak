@@ -569,6 +569,7 @@ directions = {
 class MovePiece(Move):
     def __init__(self, pos: Position, direction: Position):
         self.pos = pos
+        self.direction = direction
         self.pos_to = pos + direction
     
     def is_valid(self, state: State) -> bool:
@@ -611,6 +612,13 @@ class MovePiece(Move):
         state_copy.current_player = -state_copy.current_player
         return state_copy
     
+    def to_dict(self) -> dict:
+        return {
+            'type': self.__class__.__name__,
+            'pos': [self.pos.row, self.pos.col],
+            'direction': [self.direction.row, self.direction.col]
+        }
+
     def __repr__(self):
         return "MovePiece " + str(self.pos) + " -> " + str(self.pos_to)
 
@@ -665,5 +673,13 @@ class SplitStack(Move):
         state_copy.current_player = -state_copy.current_player
         return state_copy
     
+    def to_dict(self) -> dict:
+        return {
+            'type': self.__class__.__name__,
+            'pos': [self.pos.row, self.pos.col],
+            'direction': [self.direction.row, self.direction.col],
+            'split': self.split
+        }
+
     def __repr__(self):
         return "SplitStack " + str(self.pos) + " | " + str(self.direction) + " | " + str(self.split)

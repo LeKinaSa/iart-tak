@@ -210,6 +210,7 @@ const moveTypes = {
 const moveTypeSelect = document.getElementById('moveType');
 moveTypeSelect.addEventListener('change', (event) => {
 	showParams(moveTypes[event.target.value].params);
+	validatePos();
 });
 
 function showMoveTypes(possibleMoves) {
@@ -235,34 +236,24 @@ function showMoveTypes(possibleMoves) {
 
 let possibleMoves = [];
 
-function validateRow() {
-	let element = document.getElementById('row');
+function validatePos() {
+	let rowElement = document.getElementById('row');
+	let colElement = document.getElementById('col');
 
 	for (let move of possibleMoves) {
-		if (move.type == moveTypeSelect.value && move.pos[0] == element.value - 1) {
-			element.style.backgroundColor = "#c3fc7e";
+		if (move.type == moveTypeSelect.value && move.pos[0] == rowElement.value - 1 && move.pos[1] == colElement.value - 1) {
+			rowElement.style.backgroundColor = "#c3fc7e";
+			colElement.style.backgroundColor = "#c3fc7e";
 			return;
 		}
 	}
 
-	element.style.background = "#fc7e7e";
+	rowElement.style.background = "#fc7e7e";
+	colElement.style.background = "#fc7e7e";
 }
 
-function validateCol() {
-	let element = document.getElementById('col');
-
-	for (let move of possibleMoves) {
-		if (move.type == moveTypeSelect.value && move.pos[1] == element.value - 1) {
-			element.style.backgroundColor = "#c3fc7e";
-			return;
-		}
-	}
-
-	element.style.background = "#fc7e7e";
-}
-
-document.getElementById('row').addEventListener('change', validateRow);
-document.getElementById('col').addEventListener('change', validateCol);
+document.getElementById('row').addEventListener('change', validatePos);
+document.getElementById('col').addEventListener('change', validatePos);
 
 function getPossibleMoves() {
 	let request = new XMLHttpRequest();
@@ -274,8 +265,7 @@ function getPossibleMoves() {
 		possibleMoves = JSON.parse(request.responseText)['possible_moves'];
 		showMoveTypes(possibleMoves);
 
-		validateRow();
-		validateCol();
+		validatePos();
 
 		console.log(possibleMoves);
 	});
@@ -304,6 +294,9 @@ function onMoveSubmitted(event) {
 
 	if (moveIdx < 0) return;
 
+	// Clear moves user interface
+	possibleMoves = [];
+
 	let request = new XMLHttpRequest();
 	let url = 'http://localhost:8001/make_move';
 
@@ -311,6 +304,10 @@ function onMoveSubmitted(event) {
 	request.setRequestHeader('Content-Type', 'application/json');
 	request.addEventListener('load', (event) => {
 		updateGameState(JSON.parse(request.responseText));
+
+		if (true) { // TODO: Add check if the current player is a human
+			getPossibleMoves();
+		}
 	});
 	request.send(JSON.stringify({'move_idx': moveIdx}));
 }

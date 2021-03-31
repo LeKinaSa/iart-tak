@@ -37,12 +37,20 @@ def make_move(params: dict) -> dict:
     
     return state.to_dict()
 
+def get_move_hint(params: dict) -> dict:
+    pass
+
+def get_computer_move(params: dict) -> dict:
+    pass
+
 # Add your endpoints here
 endpoints = {
     '/sum' : _sum,
     '/start_game': start_game,
     '/get_possible_moves': get_possible_moves,
-    '/make_move': make_move
+    '/make_move': make_move,
+    '/get_move_hint': get_move_hint,
+    '/get_computer_move': get_computer_move
 }
 
 
