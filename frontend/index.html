@@ -2,15 +2,11 @@
 <html>
 	<head>
 		<meta charset="utf-8">
-		<title>My first three.js app</title>
-		<style>
-			body { margin: 0; }
-		</style>
+		<title>Tak Client in three.js</title>
 		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous" defer></script>
 		<script src="js/three.js" defer></script>
 		<script src="js/scene.js" defer></script>
-		<script src="js/controls.js" defer></script>
 		<link rel="stylesheet" href="style.css">
 	</head>
 	<body>
@@ -39,10 +35,51 @@
 			<form>
 				<h4 class="mb-3">Choose move</h4>
 				<label for="moveType" class="h5 form-label">Move type</label>
-				<select class="form-select mb-2" id="moveType">
+				<select class="form-select mb-3" id="moveType">
 				</select>
-				<div id="moveParams">
+				<div class="d-none mb-3" id="posDiv">
+					<header class="d-flex justify-content-between">
+						<h5>Position</h5>
+						<button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#coordsHelpModal">?</button>
+						<div class="modal fade" id="coordsHelpModal" aria-labelledby="coordsHelpModalLabel" aria-hidden="true">
+							<div class="modal-dialog">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title" id="coordsHelpModalLabel">Help - Coordinates</h5>
+										<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+									</div>
+									<div class="modal-body">
+										<p>Coordinates start at the top left corner, row numbers increase downwards and column numbers increase to the right</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</header>
+					<div class="row">
+						<div class="col">
+							<label for="row" class="form-label">Row</label>
+							<input type="number" class="form-control" id="row" min="1" max="5" value="1">
+						</div>
+						<div class="col">
+							<label for="col" class="form-label">Column</label>
+							<input type="number" class="form-control" id="col" min="1" max="5" value="1">
+						</div>
+					</div>
 				</div>
+				<div class="d-none mb-3" id="directionDiv">
+					<label for="direction" class="h5 form-label">Direction</label>
+					<select class="form-select" id="direction">
+						<option>Up</option>
+						<option>Down</option>
+						<option>Left</option>
+						<option>Right</option>
+					</select>
+				</div>
+				<div class="d-none mb-3" id="splitDiv">
+					<label for="split" class="h5 form-label">Split</label>
+					<input type="text" class="form-control" id="split">
+				</div>
+				<input class="form-control btn-primary" type="submit" value="Make move">
 			</form>
 		</div>
 

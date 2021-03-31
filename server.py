@@ -24,6 +24,11 @@ def start_game(params: dict) -> dict:
 
     return state.to_dict()
 
+def get_possible_moves(params: dict) -> dict:
+    global state
+    moves = [move.to_dict() for move in state.possible_moves()]
+    return {'possible_moves': moves}
+
 def make_move(params: dict) -> dict:
     global state, possible_moves
     
@@ -35,9 +40,10 @@ def make_move(params: dict) -> dict:
 
 # Add your endpoints here
 endpoints = {
-    "/sum" : _sum,
-    "/start_game": start_game,
-    "/make_move": make_move
+    '/sum' : _sum,
+    '/start_game': start_game,
+    '/possible_moves': get_possible_moves,
+    '/make_move': make_move
 }
 
 

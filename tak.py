@@ -471,6 +471,9 @@ class Move:
 
     def play(self, state: State) -> State:
         raise NotImplementedError()
+    
+    def to_dict(self) -> dict:
+        raise NotImplementedError()
 
 class PlaceFlat(Move):
     def __init__(self, pos: Position):
@@ -495,6 +498,12 @@ class PlaceFlat(Move):
         state_copy.current_player = -state_copy.current_player
         return state_copy
     
+    def to_dict(self) -> dict:
+        return {
+            'type': self.__class__.__name__,
+            'pos': [self.pos.row, self.pos.col]
+        }
+
     def __repr__(self):
         return 'PlaceFlat ' + str(self.pos)
 
@@ -513,6 +522,12 @@ class PlaceWall(Move):
 
         state_copy.current_player = -state_copy.current_player
         return state_copy
+    
+    def to_dict(self) -> dict:
+        return {
+            'type': self.__class__.__name__,
+            'pos': [self.pos.row, self.pos.col]
+        }
     
     def __repr__(self):
         return 'PlaceWall ' + str(self.pos)
@@ -533,6 +548,12 @@ class PlaceCap(Move):
         state_copy.current_player = -state_copy.current_player
         return state_copy
     
+    def to_dict(self) -> dict:
+        return {
+            'type': self.__class__.__name__,
+            'pos': [self.pos.row, self.pos.col]
+        }
+
     def __repr__(self):
         return 'PlaceCap ' + str(self.pos)
 

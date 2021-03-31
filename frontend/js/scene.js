@@ -172,6 +172,9 @@ function onGameTypeSubmitted(event) {
 
 		gameTypeControls.classList.add('d-none');
 		moveControls.classList.remove('d-none');
+
+		// TODO
+		getPossibleMoves();
 	});
 
 	let size = Number.parseInt(document.getElementById('boardSize').value);
@@ -184,6 +187,21 @@ function onGameTypeSubmitted(event) {
 
 gameTypeControls.querySelector('form').addEventListener('submit', onGameTypeSubmitted);
 
+
+// TODO: refactor this?
+function showParams(params) {
+	for (let param of ['pos', 'direction', 'split']) {
+		let divName = param + 'Div';
+		document.getElementById(divName).classList.add('d-none');
+	}
+
+	for (let param of params) {
+		let divName = param + 'Div';
+		document.getElementById(divName).classList.remove('d-none');
+	}
+}
+
+
 const moveTypes = {
 	PlaceFlat: {params: ['pos']},
 	PlaceWall: {params: ['pos']},
@@ -192,23 +210,11 @@ const moveTypes = {
 	SplitStack: {params: ['pos', 'direction', 'split']}
 };
 
-function showParams(params) {
-	let paramsDiv = document.getElementById('moveParams');
-	paramsDiv.innerHTML = "";
+const moveTypeSelect = document.getElementById('moveType');
+moveTypeSelect.addEventListener('change', (event) => {
+	showParams(moveTypes[event.target.value].params);
+});
 
-	for (let param of params) {
-		if (param === 'pos') {
-			let posDiv = document.createElement('div');
-			posDiv.classList.add('mb-2');
-			posDiv.innerHTML = '<label class="form-label" for="row">Row</label><input class="form-control"' +
-					'type="number" id="row" min="1" max="5" value="1">';
-			paramsDiv.appendChild(posDiv);
-		}
-		else if (param === 'direction') {
-
-		}
-	}
-}
 
 function showMoveTypes(possibleMoves) {
 	let possibleTypes = new Set();
@@ -219,7 +225,6 @@ function showMoveTypes(possibleMoves) {
 		}
 	}
 
-	let moveTypeSelect = document.getElementById('moveType');
 	moveTypeSelect.innerHTML = "";
 
 	for (let type of possibleTypes) {
@@ -230,8 +235,29 @@ function showMoveTypes(possibleMoves) {
 	}
 
 	showParams(moveTypes[moveTypeSelect.value].params);
-
-	moveTypeSelect.addEventListener('change', (event) => {
-		showParams(moveTypes[event.target.value].params);
-	});
 }
+
+let possibleMoves = [];
+
+function getPossibleMoves() {
+	let request = new XMLHttpRequest();
+	let url = 'http://localhost:8001/possible_moves';
+	
+	request.open('POST', url, true);
+	request.setRequestHeader('Content-Type', 'application/json');
+	request.addEventListener('load', (event) => {
+		possibleMoves = JSON.parse(request.responseText)['possible_moves'];
+		showMoveTypes(possibleMoves);
+		console.log(possibleMoves);
+	});
+	request.send(JSON.stringify({}));
+}
+
+function onMoveSubmitted(event) {
+	event.preventDefault();
+
+	let moveType = moveTypeSelect.value;
+	let request = new XMLHttpRequest();
+}
+
+moveControls.querySelector('form').addEventListener('submit', onMoveSubmitted);
