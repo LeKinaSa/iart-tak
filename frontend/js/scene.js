@@ -106,7 +106,7 @@ function addStack(row, col, stack, boardSize) {
 
 		pieceGeometry.position.x = row - boardSize / 2 + 0.5;
 		pieceGeometry.position.y = (i + 1) * 0.2 + (type !== 'f' ? 0.3 : 0);
-		pieceGeometry.position.z = col - boardSize / 2 + 0.5;
+		pieceGeometry.position.z = -(col - boardSize / 2 + 0.5);
 
 		pieceGroup.add(pieceGeometry);
 	}
