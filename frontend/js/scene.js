@@ -114,6 +114,7 @@ function addStack(row, col, stack, boardSize) {
 
 
 // A sum example
+/*
 var xhr = new XMLHttpRequest();
 var url = "http://localhost:8001/sum";
 xhr.open("POST", url, true);
@@ -126,6 +127,7 @@ xhr.onreadystatechange = function () {
 };
 var data = JSON.stringify({"numbers" : [1, 2, 3, 4]});
 xhr.send(data);
+*/
 
 /*
  *  Code related to User Interface controls
@@ -210,7 +212,7 @@ const moveTypes = {
 const moveTypeSelect = document.getElementById('moveType');
 moveTypeSelect.addEventListener('change', (event) => {
 	showParams(moveTypes[event.target.value].params);
-	validatePos();
+	validateParams();
 });
 
 function showMoveTypes(possibleMoves) {
@@ -236,24 +238,63 @@ function showMoveTypes(possibleMoves) {
 
 let possibleMoves = [];
 
-function validatePos() {
-	let rowElement = document.getElementById('row');
-	let colElement = document.getElementById('col');
+const rowElement = document.getElementById('row');
+const colElement = document.getElementById('col');
+const directionElement = document.getElementById('direction');
+const splitElement = document.getElementById('split');
 
+const colorGreen = "#c3fc7e", colorRed = "#fc7e7e";
+
+const directionsMap = {
+	'Up': [-1, 0],
+	'Down': [1, 0],
+	'Left': [0, -1],
+	'Right': [0, 1]
+}
+
+function validateParams() {
+	let pos = [Number.parseInt(rowElement.value) - 1, Number.parseInt(colElement.value) - 1];
+	let direction = directionsMap[directionElement.value];
+	let split;
+
+	try {
+		split = splitElement.value.split(',').map((val) => Number.parseInt(val.trim()));
+	}
+	catch (error) {
+		splitElement.style.backgroundColor = colorRed;
+		return;
+	}
+
+	rowElement.style.background = colorRed;
+	colElement.style.background = colorRed;
+	directionElement.style.backgroundColor = colorRed;
+	splitElement.style.backgroundColor = colorRed;
+	
+	// TODO: A bit ugly but works
 	for (let move of possibleMoves) {
-		if (move.type == moveTypeSelect.value && move.pos[0] == rowElement.value - 1 && move.pos[1] == colElement.value - 1) {
-			rowElement.style.backgroundColor = "#c3fc7e";
-			colElement.style.backgroundColor = "#c3fc7e";
-			return;
+		if (move.type == moveTypeSelect.value && arrayEquals(move.pos, pos) && arrayEquals(move.direction, direction) && arrayEquals(move.split, split)) {
+			splitElement.style.backgroundColor = colorGreen;
 		}
 	}
 
-	rowElement.style.background = "#fc7e7e";
-	colElement.style.background = "#fc7e7e";
+	for (let move of possibleMoves) {
+		if (move.type == moveTypeSelect.value && arrayEquals(move.pos, pos) && arrayEquals(move.direction, direction)) {
+			directionElement.style.backgroundColor = colorGreen;
+		}
+	}
+
+	for (let move of possibleMoves) {
+		if (move.type == moveTypeSelect.value && arrayEquals(move.pos, pos)) {
+			rowElement.style.background = colorGreen;
+			colElement.style.background = colorGreen;
+		}
+	}
 }
 
-document.getElementById('row').addEventListener('change', validatePos);
-document.getElementById('col').addEventListener('change', validatePos);
+document.getElementById('row').addEventListener('change', validateParams);
+document.getElementById('col').addEventListener('change', validateParams);
+document.getElementById('direction').addEventListener('change', validateParams);
+document.getElementById('split').addEventListener('change', validateParams);
 
 function getPossibleMoves() {
 	let request = new XMLHttpRequest();
@@ -265,14 +306,14 @@ function getPossibleMoves() {
 		possibleMoves = JSON.parse(request.responseText)['possible_moves'];
 		showMoveTypes(possibleMoves);
 
-		validatePos();
+		validateParams();
 
 		console.log(possibleMoves);
 	});
 	request.send(JSON.stringify({}));
 }
 
-function posEquals(pos1, pos2) {
+function arrayEquals(pos1, pos2) {
 	return Array.isArray(pos1) && Array.isArray(pos2) && pos1.length === pos2.length &&
 		pos1.every((val, idx) => val === pos2[idx]);
 }
@@ -282,13 +323,27 @@ function onMoveSubmitted(event) {
 
 	let type = moveTypeSelect.value;
 	let pos = [Number.parseInt(document.getElementById('row').value) - 1, Number.parseInt(document.getElementById('col').value) - 1];
+	let direction = directionsMap[directionElement.value];
+
+	let split;
+
+	try {
+		split = splitElement.value.split(',').map((val) => Number.parseInt(val.trim()));
+	}
+	catch (error) {
+		split = [];
+	}
 	
 	moveIdx = -1
 	for (let i = 0; i < possibleMoves.length; ++i) {
 		let move = possibleMoves[i];
-		if (type === move.type && posEquals(pos, move.pos)) {
-			moveIdx = i;
-			break;
+		if (type === move.type && arrayEquals(pos, move.pos)) {
+			if (move.direction === undefined || arrayEquals(direction, move.direction)) {
+				if (move.split === undefined || arrayEquals(split, move.split)) {
+					moveIdx = i;
+					break;
+				}
+			}
 		}
 	}
 
