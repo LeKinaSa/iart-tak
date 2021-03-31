@@ -49,6 +49,8 @@ function animate() {
 
 animate();
 
+const pieceGroup = new THREE.Group();
+
 function generateBoard(size = 5) {
 	const darkBase = new THREE.Mesh(new THREE.BoxGeometry(1, 0.2, 1), darkwood);
 	const lightBase = new THREE.Mesh(new THREE.BoxGeometry(1, 0.2, 1), lightwood);
@@ -71,16 +73,16 @@ function generateBoard(size = 5) {
 			scene.add(base);
 		}
 	}
+
+	scene.add(pieceGroup);
 }
 
-const pieceGroup = new THREE.Group();
-
-function addPieces(board) {
+function updateBoard(board) {
 	pieceGroup.clear();
 
 	for (let row = 0; row < board.length; ++row) {
 		for (let col = 0; col < board.length; ++col) {
-			let stack = board[row][col];
+			addStack(row, col, board[row][col], board.length);
 		}
 	}
 }
@@ -95,37 +97,23 @@ pieceMap.set('ww', new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.2), lightmar
 pieceMap.set('bc', new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.8, 16), darkmarble));
 pieceMap.set('wc', new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.8, 16), lightmarble));	
 
-function addStack(x, z, stack) {
+function addStack(row, col, stack, boardSize) {
 	for (let i = 0; i < stack.length; i++) {
 		let piece = stack[i];
 		let type = stack[i][1];
 
 		const pieceGeometry = pieceMap.get(piece).clone();
-		pieceGeometry.position.x = x;
+
+		pieceGeometry.position.x = row - boardSize / 2 + 0.5;
 		pieceGeometry.position.y = (i + 1) * 0.2 + (type !== 'f' ? 0.3 : 0);
-		pieceGeometry.position.z = z;
+		pieceGeometry.position.z = col - boardSize / 2 + 0.5;
+
 		pieceGroup.add(pieceGeometry);
 	}
 }
 
-// setTimeout(() => {for (let z = -2; z <= 2; z++) {
-// 	for (let y = -2; y <= 2; y++) {
-// 		for (let x = -2; x <= 2; x++) {
-// 			const cube2 = cube.clone();
-// 			cube2.position.x = x;
-// 			cube2.position.y = y/4;
-// 			cube2.position.z = z;
-// 			scene.add( cube2 );
-// 			console.log(x)
-// 		}
-// 	}
-// 	}
-
-// }, 2000);
-
 
 // A sum example
-//
 var xhr = new XMLHttpRequest();
 var url = "http://localhost:8001/sum";
 xhr.open("POST", url, true);
@@ -148,6 +136,17 @@ gameTypeControls.classList.remove("d-none");
 
 const moveControls = document.getElementById('moveControls');
 
+function updateGameState(state) {
+	updateBoard(state['board']);
+	
+	document.getElementById('whiteNormalPieces').innerHTML = state['num_flats'][1];
+	document.getElementById('whiteCapstones').innerHTML = state['num_caps'][1];
+	document.getElementById('blackNormalPieces').innerHTML = state['num_flats'][-1];
+	document.getElementById('blackCapstones').innerHTML = state['num_caps'][-1];
+
+	document.getElementById('currentPlayer').innerHTML = state['current_player'] === 1 ? 'White' : 'Black';
+}
+
 function onGameTypeSubmitted(event) {
 	event.preventDefault();
 
@@ -163,12 +162,7 @@ function onGameTypeSubmitted(event) {
 
 		generateBoard(response['board'].length);
 
-		document.getElementById('whiteNormalPieces').innerHTML = response['num_flats'][1];
-		document.getElementById('whiteCapstones').innerHTML = response['num_caps'][1];
-		document.getElementById('blackNormalPieces').innerHTML = response['num_flats'][-1];
-		document.getElementById('blackCapstones').innerHTML = response['num_caps'][-1];
-
-		document.getElementById('currentPlayer').innerHTML = response['current_player'] === 1 ? 'White' : 'Black';
+		updateGameState(response);
 
 		gameTypeControls.classList.add('d-none');
 		moveControls.classList.remove('d-none');
@@ -272,7 +266,7 @@ document.getElementById('col').addEventListener('change', validateCol);
 
 function getPossibleMoves() {
 	let request = new XMLHttpRequest();
-	let url = 'http://localhost:8001/possible_moves';
+	let url = 'http://localhost:8001/get_possible_moves';
 	
 	request.open('POST', url, true);
 	request.setRequestHeader('Content-Type', 'application/json');
@@ -288,11 +282,37 @@ function getPossibleMoves() {
 	request.send(JSON.stringify({}));
 }
 
+function posEquals(pos1, pos2) {
+	return Array.isArray(pos1) && Array.isArray(pos2) && pos1.length === pos2.length &&
+		pos1.every((val, idx) => val === pos2[idx]);
+}
+
 function onMoveSubmitted(event) {
 	event.preventDefault();
 
-	let moveType = moveTypeSelect.value;
+	let type = moveTypeSelect.value;
+	let pos = [Number.parseInt(document.getElementById('row').value) - 1, Number.parseInt(document.getElementById('col').value) - 1];
+	
+	moveIdx = -1
+	for (let i = 0; i < possibleMoves.length; ++i) {
+		let move = possibleMoves[i];
+		if (type === move.type && posEquals(pos, move.pos)) {
+			moveIdx = i;
+			break;
+		}
+	}
+
+	if (moveIdx < 0) return;
+
 	let request = new XMLHttpRequest();
+	let url = 'http://localhost:8001/make_move';
+
+	request.open('POST', url, true);
+	request.setRequestHeader('Content-Type', 'application/json');
+	request.addEventListener('load', (event) => {
+		updateGameState(JSON.parse(request.responseText));
+	});
+	request.send(JSON.stringify({'move_idx': moveIdx}));
 }
 
 moveControls.querySelector('form').addEventListener('submit', onMoveSubmitted);

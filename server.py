@@ -20,14 +20,13 @@ def start_game(params: dict) -> dict:
     white_type = params['white_type']
     black_type = params['black_type']
 
-    print(white_type, black_type)
-
     return state.to_dict()
 
 def get_possible_moves(params: dict) -> dict:
-    global state
-    moves = [move.to_dict() for move in state.possible_moves()]
-    return {'possible_moves': moves}
+    global state, possible_moves
+
+    possible_moves = state.possible_moves()
+    return {'possible_moves': [move.to_dict() for move in possible_moves]}
 
 def make_move(params: dict) -> dict:
     global state, possible_moves
@@ -42,7 +41,7 @@ def make_move(params: dict) -> dict:
 endpoints = {
     '/sum' : _sum,
     '/start_game': start_game,
-    '/possible_moves': get_possible_moves,
+    '/get_possible_moves': get_possible_moves,
     '/make_move': make_move
 }
 

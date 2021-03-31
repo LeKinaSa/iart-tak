@@ -456,8 +456,10 @@ class State:
         return min_value, best_move
     
     def to_dict(self) -> dict:
+        board_json = [[[repr(piece) for piece in stack] for stack in row] for row in self.board]
+
         return {
-            'board': self.board,
+            'board': board_json,
             'current_player': self.current_player,
             'num_flats': self.num_flats,
             'num_caps': self.num_caps
