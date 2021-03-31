@@ -146,6 +146,8 @@ xhr.send(data);
 const gameTypeControls = document.getElementById('gameTypeControls');
 gameTypeControls.classList.remove("d-none");
 
+const moveControls = document.getElementById('moveControls');
+
 function onGameTypeSubmitted(event) {
 	event.preventDefault();
 
@@ -166,7 +168,10 @@ function onGameTypeSubmitted(event) {
 		document.getElementById('blackNormalPieces').innerHTML = response['num_flats'][-1];
 		document.getElementById('blackCapstones').innerHTML = response['num_caps'][-1];
 
+		document.getElementById('currentPlayer').innerHTML = response['current_player'] === 1 ? 'White' : 'Black';
+
 		gameTypeControls.classList.add('d-none');
+		moveControls.classList.remove('d-none');
 	});
 
 	let size = Number.parseInt(document.getElementById('boardSize').value);
