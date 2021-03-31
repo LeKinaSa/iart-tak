@@ -181,6 +181,9 @@ function onGameTypeSubmitted(event) {
 	let whiteType = document.getElementById('whiteType').value;
 	let blackType = document.getElementById('blackType').value;
 
+	document.getElementById('row').max = size;
+	document.getElementById('col').max = size;
+
 	let data = JSON.stringify({size: size, white_type: whiteType, black_type: blackType});
 	request.send(data);
 }
@@ -215,7 +218,6 @@ moveTypeSelect.addEventListener('change', (event) => {
 	showParams(moveTypes[event.target.value].params);
 });
 
-
 function showMoveTypes(possibleMoves) {
 	let possibleTypes = new Set();
 
@@ -239,6 +241,35 @@ function showMoveTypes(possibleMoves) {
 
 let possibleMoves = [];
 
+function validateRow() {
+	let element = document.getElementById('row');
+
+	for (let move of possibleMoves) {
+		if (move.type == moveTypeSelect.value && move.pos[0] == element.value - 1) {
+			element.style.backgroundColor = "#c3fc7e";
+			return;
+		}
+	}
+
+	element.style.background = "#fc7e7e";
+}
+
+function validateCol() {
+	let element = document.getElementById('col');
+
+	for (let move of possibleMoves) {
+		if (move.type == moveTypeSelect.value && move.pos[1] == element.value - 1) {
+			element.style.backgroundColor = "#c3fc7e";
+			return;
+		}
+	}
+
+	element.style.background = "#fc7e7e";
+}
+
+document.getElementById('row').addEventListener('change', validateRow);
+document.getElementById('col').addEventListener('change', validateCol);
+
 function getPossibleMoves() {
 	let request = new XMLHttpRequest();
 	let url = 'http://localhost:8001/possible_moves';
@@ -248,6 +279,10 @@ function getPossibleMoves() {
 	request.addEventListener('load', (event) => {
 		possibleMoves = JSON.parse(request.responseText)['possible_moves'];
 		showMoveTypes(possibleMoves);
+
+		validateRow();
+		validateCol();
+
 		console.log(possibleMoves);
 	});
 	request.send(JSON.stringify({}));

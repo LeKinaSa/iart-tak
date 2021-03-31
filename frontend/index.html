@@ -12,7 +12,7 @@
 	<body>
 		<div class="d-none controls bg-light p-3" id="gameTypeControls">
 			<form>
-				<h4 class="mb-3">Choose game type</h4>
+				<h4 class="text-center mb-3">Choose game type</h4>
 				<label for="boardSize" class="h5 form-label">Board size</label>
 				<input type="number" class="form-control mb-2" id="boardSize" min="3" max="5" value="4">
 				<label for="whiteType" class="h5 form-label">White</label>
@@ -33,7 +33,7 @@
 
 		<div class="d-none controls bg-light p-3" id="moveControls">
 			<form>
-				<h4 class="mb-3">Choose move</h4>
+				<h4 class="text-center mb-3">Choose move</h4>
 				<label for="moveType" class="h5 form-label">Move type</label>
 				<select class="form-select mb-3" id="moveType">
 				</select>
@@ -49,7 +49,8 @@
 										<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 									</div>
 									<div class="modal-body">
-										<p>Coordinates start at the top left corner, row numbers increase downwards and column numbers increase to the right</p>
+										<p>Coordinates start at the top left corner, row numbers increase downwards and column numbers increase to the right.</p>
+										<p>Coordinates range from <b>1</b> to <b>board size</b>.</p>
 									</div>
 								</div>
 							</div>
