@@ -1,5 +1,5 @@
 
-from typing import List
+from typing import List, Callable
 from enum import Enum, auto
 from copy import deepcopy
 from pprint import pprint
@@ -59,6 +59,122 @@ capstones_for_size = {
     6: 1, 7: 1, 8: 2
 }
 
+def evaluate(state, player: Player) -> int:
+    '''
+    Returns a number representing the value of this game state for the given player.
+    '''
+
+    result = state.objective()
+
+    if result == Result.DRAW:
+        return 0
+    elif (result == Result.WHITE_WIN and player == Player.WHITE) or (result == Result.BLACK_WIN and player == Player.BLACK):
+        return int(1e9)
+    elif (result == Result.WHITE_WIN and player == Player.BLACK) or (result == Result.BLACK_WIN and player == Player.BLACK):
+        return int(-1e9)
+    
+    def heuristic_num_flats() -> int:
+        value = 0
+
+        for row in range(state.board_size):
+            for col in range(state.board_size):
+                stack = state.board[row][col]
+                if stack and stack[-1].type == PieceType.FLAT:
+                    # Positive if stack is controlled by the player, negative otherwise
+                    value += player * stack[-1].color
+        
+        return value
+    
+    def heuristic_corner_pieces() -> int:
+        value = 0
+        corners = [Position(0, 0), Position(0, state.board_size - 1), Position(state.board_size - 1, 0), Position(state.board_size - 1, state.board_size - 1)]
+
+        for position in corners:
+            stack = state.board[position.row][position.col]
+            if stack and stack[-1].type != PieceType.WALL:
+                value += player * stack[-1].color
+
+        return value
+
+    def heuristic_penalty_walls() -> int:
+        value = 0
+
+        for row in range(state.board_size):
+            for col in range(state.board_size):
+                stack = state.board[row][col]
+                if len(stack) == 1 and stack[0].type == PieceType.WALL:
+                    adjacent = [Position(row, col) + direction for direction in directions.values()]
+                    adjacent = filter(lambda x: x.is_within_bounds(0, state.board_size - 1), adjacent)
+
+                    # Obtain adjacent stacks which are not empty
+                    adjacent_stacks = [state.board[pos.row][pos.col] for pos in adjacent]
+                    adjacent_stacks = filter(lambda x: x, adjacent_stacks)
+
+                    if not adjacent_stacks:
+                        value += player * stack[0].color * -5
+                    else:
+                        for adj_stack in adjacent_stacks:
+                            if adj_stack[-1].type == PieceType.CAPSTONE and adj_stack[-1].color != player:
+                                value += player * stack[0].color * -5
+        
+        return value
+    
+    def heuristic_captured_pieces() -> int:
+        '''Calculates the number of opposing pieces each player has captured'''
+        value = 0
+
+        for row in range(state.board_size):
+            for col in range(state.board_size):
+                stack = state.board[row][col]
+
+                if len(stack) > 1:
+                    top_color = stack[-1].color
+                    value += state.current_player * top_color * len(list(filter(lambda x: x.color != top_color, stack)))
+        
+        return value
+
+    def heuristic_nearness_to_optimal_road() -> int:
+        '''Calculates the maximum number of pieces in a single row or column for each player (i. e. the nearness to an optimal road)'''
+        value_player = 0
+        value_opponent = 0
+
+        for i in range(state.board_size):
+            count_player = 0
+            count_opponent = 0
+            
+            # Get maximum number of pieces along row
+            for j in range(state.board_size):
+                stack = state.board[i][j]
+                if stack:
+                    if stack[-1].color == state.current_player:
+                        count_player += 1
+                    else:
+                        count_opponent += 1
+            
+            value_player = max(value_player, count_player)
+            value_opponent = max(value_opponent, count_opponent)
+
+            # Get maximum number of pieces along column
+            for j in range(state.board_size):
+                stack = state.board[j][i]
+                if stack:
+                    if stack[-1].color == state.current_player:
+                        count_player += 1
+                    else:
+                        count_opponent += 1
+            
+            value_player = max(value_player, count_player)
+            value_opponent = max(value_opponent, count_opponent)
+
+        return value_player - value_opponent
+    
+
+    # The overall evaluation can be fine-tuned by adjusting each heuristic's multiplier
+    value = 10 * heuristic_num_flats() + 5 * heuristic_corner_pieces() + heuristic_penalty_walls() + 5 * heuristic_captured_pieces() + \
+        3 * heuristic_nearness_to_optimal_road()
+
+    return value
+
 class State:
     def __init__(self, board_size = 5):
         self.first_turn = True
@@ -81,122 +197,6 @@ class State:
     
     def __eq__(self, other):
         return self.board == other.board and self.current_player == other.current_player
-    
-    def evaluate(self, player: Player) -> int:
-        '''
-        Returns a number representing the value of this game state for the given player.
-        '''
-
-        result = self.objective()
-
-        if result == Result.DRAW:
-            return 0
-        elif (result == Result.WHITE_WIN and player == Player.WHITE) or (result == Result.BLACK_WIN and player == Player.BLACK):
-            return int(1e9)
-        elif (result == Result.WHITE_WIN and player == Player.BLACK) or (result == Result.BLACK_WIN and player == Player.BLACK):
-            return int(-1e9)
-        
-        def heuristic_num_flats() -> int:
-            value = 0
-
-            for row in range(self.board_size):
-                for col in range(self.board_size):
-                    stack = self.board[row][col]
-                    if stack and stack[-1].type == PieceType.FLAT:
-                        # Positive if stack is controlled by the player, negative otherwise
-                        value += player * stack[-1].color
-            
-            return value
-        
-        def heuristic_corner_pieces() -> int:
-            value = 0
-            corners = [Position(0, 0), Position(0, self.board_size - 1), Position(self.board_size - 1, 0), Position(self.board_size - 1, self.board_size - 1)]
-
-            for position in corners:
-                stack = self.board[position.row][position.col]
-                if stack and stack[-1].type != PieceType.WALL:
-                    value += player * stack[-1].color
-
-            return value
-
-        def heuristic_penalty_walls() -> int:
-            value = 0
-
-            for row in range(self.board_size):
-                for col in range(self.board_size):
-                    stack = self.board[row][col]
-                    if len(stack) == 1 and stack[0].type == PieceType.WALL:
-                        adjacent = [Position(row, col) + direction for direction in directions.values()]
-                        adjacent = filter(lambda x: x.is_within_bounds(0, self.board_size - 1), adjacent)
-
-                        # Obtain adjacent stacks which are not empty
-                        adjacent_stacks = [self.board[pos.row][pos.col] for pos in adjacent]
-                        adjacent_stacks = filter(lambda x: x, adjacent_stacks)
-
-                        if not adjacent_stacks:
-                            value += player * stack[0].color * -5
-                        else:
-                            for adj_stack in adjacent_stacks:
-                                if adj_stack[-1].type == PieceType.CAPSTONE and adj_stack[-1].color != player:
-                                    value += player * stack[0].color * -5
-            
-            return value
-        
-        def heuristic_captured_pieces() -> int:
-            '''Calculates the number of opposing pieces each player has captured'''
-            value = 0
-
-            for row in range(self.board_size):
-                for col in range(self.board_size):
-                    stack = self.board[row][col]
-
-                    if len(stack) > 1:
-                        top_color = stack[-1].color
-                        value += self.current_player * top_color * len(list(filter(lambda x: x.color != top_color, stack)))
-            
-            return value
-
-        def heuristic_nearness_to_optimal_road() -> int:
-            '''Calculates the maximum number of pieces in a single row or column for each player (i. e. the nearness to an optimal road)'''
-            value_player = 0
-            value_opponent = 0
-
-            for i in range(self.board_size):
-                count_player = 0
-                count_opponent = 0
-                
-                # Get maximum number of pieces along row
-                for j in range(self.board_size):
-                    stack = self.board[i][j]
-                    if stack:
-                        if stack[-1].color == self.current_player:
-                            count_player += 1
-                        else:
-                            count_opponent += 1
-                
-                value_player = max(value_player, count_player)
-                value_opponent = max(value_opponent, count_opponent)
-
-                # Get maximum number of pieces along column
-                for j in range(self.board_size):
-                    stack = self.board[j][i]
-                    if stack:
-                        if stack[-1].color == self.current_player:
-                            count_player += 1
-                        else:
-                            count_opponent += 1
-                
-                value_player = max(value_player, count_player)
-                value_opponent = max(value_opponent, count_opponent)
-
-            return value_player - value_opponent
-        
-
-        # The overall evaluation can be fine-tuned by adjusting each heuristic's multiplier
-        value = 10 * heuristic_num_flats() + 5 * heuristic_corner_pieces() + heuristic_penalty_walls() + 5 * heuristic_captured_pieces() + \
-            3 * heuristic_nearness_to_optimal_road()
-
-        return value
     
     def possible_moves(self) -> List:
         '''Returns a list of all valid moves for this game state.'''
@@ -301,7 +301,7 @@ class State:
     nm_time_evaluating = 0
 
     transposition_cache = {}
-    def negamax(self, depth: int, pruning: bool = False, caching: bool = False, statistics: bool = False):
+    def negamax(self, depth: int, evaluation_function: Callable = evaluate, pruning: bool = False, caching: bool = False, statistics: bool = False):
         '''
         Implementation of the negamax algorithm, a variant of minimax that takes advantage of the
         zero-sum property of two-player adversarial games. Includes parameters for specifying the
@@ -327,7 +327,7 @@ class State:
             State.nm_time_possible_moves = 0
             State.nm_time_evaluating = 0
 
-        _, move = self.negamax_recursive(depth, pruning, caching, statistics, alpha, beta, 1)
+        _, move = self.negamax_recursive(depth, evaluation_function, pruning, caching, statistics, alpha, beta, 1)
 
         if statistics:
             print("Number of positions analysed:", State.nm_calls)
@@ -338,7 +338,7 @@ class State:
 
         return move
     
-    def negamax_recursive(self, depth: int, pruning: bool, caching: bool, statistics: bool, alpha: int, beta: int, player: int):
+    def negamax_recursive(self, depth: int, evaluation_function: Callable, pruning: bool, caching: bool, statistics: bool, alpha: int, beta: int, player: int):
         if statistics:
             State.nm_calls += 1
         
@@ -356,7 +356,7 @@ class State:
         # Maximum depth has been reached or no possible moves (game has ended): run evaluation function
         if depth == 0 or not moves:
             start = time.time()
-            evaluation = self.evaluate(self.current_player)
+            evaluation = evaluation_function(self, self.current_player)
             end = time.time()
 
             if statistics:
@@ -373,7 +373,7 @@ class State:
         for move in moves:
             new_state = move.play(self)
             
-            value, _ = new_state.negamax_recursive(depth - 1, pruning, caching, statistics, -beta, -alpha, -player)
+            value, _ = new_state.negamax_recursive(depth - 1, evaluation_function, pruning, caching, statistics, -beta, -alpha, -player)
             value = -value
 
             if value > max_value:
@@ -407,7 +407,7 @@ class State:
         moves = self.possible_moves()
 
         if depth == 0 or not moves:
-            return self.evaluate(self.current_player), None
+            return evaluate(self, self.current_player), None
         
         best_move = None
         max_value = int(-1e9)
@@ -433,7 +433,7 @@ class State:
         moves = self.possible_moves()
         
         if depth == 0 or not moves:
-            return self.evaluate(self.current_player), None
+            return evaluate(self, self.current_player), None
         
         best_move = None
         min_value = int(1e9)

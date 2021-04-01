@@ -18,14 +18,16 @@
 				<label for="whiteType" class="h5 form-label">White</label>
 				<select class="form-select mb-2" id="whiteType">
 					<option selected value="human">Human</option>
-					<option value="ai1">AI Level 1</option>
-					<option value="ai2">AI Level 2</option>
+					<option value="ai1">AI Level 1 (Easy)</option>
+					<option value="ai2">AI Level 2 (Medium)</option>
+					<option value="ai3">AI Level 3 (Hard)</option>
 				</select>
 				<label for="whiteType" class="h5 form-label">Black</label>
 				<select class="form-select mb-3" id="blackType">
 					<option selected value="human">Human</option>
-					<option value="ai1">AI Level 1</option>
-					<option value="ai2">AI Level 2</option>
+					<option value="ai1">AI Level 1 (Easy)</option>
+					<option value="ai2">AI Level 2 (Medium)</option>
+					<option value="ai3">AI Level 3 (Hard)</option>
 				</select>
 				<input class="form-control btn-primary" type="submit" value="Start">
 			</form>
@@ -84,38 +86,43 @@
 			</form>
 		</div>
 
-		<div class="information d-flex flex-column gap-3">
-			<div class="bg-light p-3">
-				<h4 class="text-center">Pieces</h4>
-				<table class="table">
-					<thead class="table-dark">
-						<tr class="text-center">
-							<th colspan="2">White</th>
-							<th colspan="2">Black</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr class="text-center">
-							<th>Normal</th>
-							<th>Capstones</th>
-							<th>Normal</th>
-							<th>Capstones</th>
-						</tr>
-						<tr class="text-center">
-							<td id="whiteNormalPieces">0</td>
-							<td id="whiteCapstones">0</td>
-							<td id="blackNormalPieces">0</td>
-							<td id="blackCapstones">0</td>
-						</tr>
-					</tbody>
-				</table>
-				<h5>Current player: <span id="currentPlayer"></span></h5>
+		<div class="d-flex flex-column align-items-center gap-2 d-none controls bg-light p-3" id="computerMoveIndicator">
+			<h4>Computer is thinking...</h4>
+			<div class="spinner-border text-primary" role="status">
+				<span class="visually-hidden">Thinking...</span>
 			</div>
+		</div>
 
-			<div class="bg-light p-3">
-				<h4 class="text-center">Move history</h4>
-				<div class="overflow-auto" id="moves">
-				</div>
+		<div class="information bg-light p-3">
+			<h4 class="text-center">Pieces</h4>
+			<table class="table">
+				<thead class="table-dark">
+					<tr class="text-center">
+						<th colspan="2">White</th>
+						<th colspan="2">Black</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr class="text-center">
+						<th>Normal</th>
+						<th>Capstones</th>
+						<th>Normal</th>
+						<th>Capstones</th>
+					</tr>
+					<tr class="text-center">
+						<td id="whiteNormalPieces">0</td>
+						<td id="whiteCapstones">0</td>
+						<td id="blackNormalPieces">0</td>
+						<td id="blackCapstones">0</td>
+					</tr>
+				</tbody>
+			</table>
+			<h5>Current player: <span id="currentPlayer"></span></h5>
+
+			<hr>
+
+			<h4 class="text-center">Move history</h4>
+			<div class="overflow-auto" id="moves">
 			</div>
 		</div>
 	</body>

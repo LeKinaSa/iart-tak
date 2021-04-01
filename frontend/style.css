@@ -10,3 +10,7 @@
     right: 1em;
     top: 1em;
 }
+
+#moves {
+    max-height: 50vh;
+}

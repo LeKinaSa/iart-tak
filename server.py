@@ -3,22 +3,21 @@ from http import HTTPStatus
 
 import json
 
-from tak import State
+from tak import State, Player
 
 state = None
-white_type = None
-black_type = None
+player_types = {}
 possible_moves = []
 
 def _sum(l : dict) -> dict:
     return {"result" : sum(l["numbers"])}
 
 def start_game(params: dict) -> dict:
-    global state, white_type, black_type
+    global state, player_types
 
     state = State(params['size'])
-    white_type = params['white_type']
-    black_type = params['black_type']
+    player_types[Player.WHITE] = params['white_type']
+    player_types[Player.BLACK] = params['black_type']
 
     return state.to_dict()
 
@@ -37,13 +36,39 @@ def make_move(params: dict) -> dict:
     
     return state.to_dict()
 
+
+# Search depths for each board size (for level 3 AI)
+depths = {
+    3: 5,
+    4: 4,
+    5: 3
+}
+
 def get_move_hint(params: dict) -> dict:
-    pass
+    depth = depths[state.board_size]
+    return state.negamax(depth, pruning=True, caching=True).to_dict()
 
 def get_computer_move(params: dict) -> dict:
-    pass
+    global state, player_types
 
-# Add your endpoints here
+    player_type = player_types[state.current_player]
+    depth = depths[state.board_size]
+
+    if player_type == 'ai1':
+        move = state.negamax(depth - 2, pruning=True, caching=True)
+    elif player_type == 'ai2':
+        move = state.negamax(depth - 1, pruning=True, caching=True)
+    elif player_type == 'ai3':
+        move = state.negamax(depth, pruning=True, caching=True, statistics=True)
+
+    if move:
+        state = move.play(state)
+        return state.to_dict()
+
+    return {}
+
+# Each URL (request) is mapped to a different function
+# These functions take in a dictionary and return a dictionary
 endpoints = {
     '/sum' : _sum,
     '/start_game': start_game,
@@ -55,7 +80,7 @@ endpoints = {
 
 
 class _RequestHandler(BaseHTTPRequestHandler):
-    # Borrowing from https://gist.github.com/nitaku/10d0662536f37a087e1b
+    # Server code adapted from https://gist.github.com/nitaku/10d0662536f37a087e1b
     def _set_headers(self):
         self.send_response(HTTPStatus.OK.value)
         self.send_header('Content-type', 'application/json')

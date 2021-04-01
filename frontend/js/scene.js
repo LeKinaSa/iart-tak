@@ -137,6 +137,9 @@ const gameTypeControls = document.getElementById('gameTypeControls');
 gameTypeControls.classList.remove("d-none");
 
 const moveControls = document.getElementById('moveControls');
+const computerMoveIndicator = document.getElementById('computerMoveIndicator');
+
+const playerTypes = {}
 
 function updateGameState(state) {
 	updateBoard(state['board']);
@@ -159,23 +162,27 @@ function onGameTypeSubmitted(event) {
 	request.addEventListener('load', (event) => {
 		event.preventDefault();
 
-		let response = JSON.parse(request.responseText);
-		console.log(response);
-
-		generateBoard(response['board'].length);
-
-		updateGameState(response);
-
 		gameTypeControls.classList.add('d-none');
-		moveControls.classList.remove('d-none');
 
-		// TODO
-		getPossibleMoves();
+		let state = JSON.parse(request.responseText);
+
+		generateBoard(state['board'].length);
+		updateGameState(state);
+
+		if (playerTypes[state['current_player']] === 'human') {
+			readyPlayerMove();
+		}
+		else {
+			readyComputerMove();
+		}
 	});
 
 	let size = Number.parseInt(document.getElementById('boardSize').value);
 	let whiteType = document.getElementById('whiteType').value;
 	let blackType = document.getElementById('blackType').value;
+
+	playerTypes[-1] = blackType;
+	playerTypes[1] = whiteType;
 
 	document.getElementById('row').max = size;
 	document.getElementById('col').max = size;
@@ -185,6 +192,19 @@ function onGameTypeSubmitted(event) {
 }
 
 gameTypeControls.querySelector('form').addEventListener('submit', onGameTypeSubmitted);
+
+
+function readyPlayerMove() {
+	computerMoveIndicator.classList.add('d-none');
+	moveControls.classList.remove('d-none');
+	getPossibleMoves();
+}
+
+function readyComputerMove() {
+	computerMoveIndicator.classList.remove('d-none');
+	moveControls.classList.add('d-none');
+	setTimeout(getComputerMove, 200);
+}
 
 
 // TODO: refactor this?
@@ -318,6 +338,17 @@ function arrayEquals(pos1, pos2) {
 		pos1.every((val, idx) => val === pos2[idx]);
 }
 
+function nextTurn(state) {
+	updateGameState(state);
+	
+	if (playerTypes[state['current_player']] === 'human') {
+		readyPlayerMove();
+	}
+	else {
+		readyComputerMove();
+	}
+}
+
 function onMoveSubmitted(event) {
 	event.preventDefault();
 
@@ -357,14 +388,22 @@ function onMoveSubmitted(event) {
 
 	request.open('POST', url, true);
 	request.setRequestHeader('Content-Type', 'application/json');
-	request.addEventListener('load', (event) => {
-		updateGameState(JSON.parse(request.responseText));
-
-		if (true) { // TODO: Add check if the current player is a human
-			getPossibleMoves();
-		}
+	request.addEventListener('load', () => {
+		nextTurn(JSON.parse(request.responseText));
 	});
 	request.send(JSON.stringify({'move_idx': moveIdx}));
+}
+
+function getComputerMove() {
+	let request = new XMLHttpRequest();
+	let url = 'http://localhost:8001/get_computer_move';
+
+	request.open('POST', url, true);
+	request.setRequestHeader('Content-Type', 'application/json');
+	request.addEventListener('load', () => {
+		nextTurn(JSON.parse(request.responseText));
+	});
+	request.send(JSON.stringify({}));
 }
 
 moveControls.querySelector('form').addEventListener('submit', onMoveSubmitted);
