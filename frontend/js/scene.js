@@ -138,6 +138,7 @@ gameTypeControls.classList.remove("d-none");
 
 const moveControls = document.getElementById('moveControls');
 const computerMoveIndicator = document.getElementById('computerMoveIndicator');
+const gameResult = document.getElementById('gameResult');
 
 const playerTypes = {}
 
@@ -164,7 +165,8 @@ function onGameTypeSubmitted(event) {
 
 		gameTypeControls.classList.add('d-none');
 
-		let state = JSON.parse(request.responseText);
+		let response = JSON.parse(request.responseText);
+		let state = response['state'];
 
 		generateBoard(state['board'].length);
 		updateGameState(state);
@@ -349,6 +351,37 @@ function nextTurn(state) {
 	}
 }
 
+function showGameResult(result) {
+	moveControls.classList.add('d-none');
+	computerMoveIndicator.classList.add('d-none');
+	gameResult.classList.remove('d-none');
+
+	let textElement = document.getElementById('gameResultText');
+
+	if (result == 2) {
+		textElement.innerHTML = 'Black won!';
+	}
+	else if (result == 3) {
+		textElement.innerHTML = 'Draw!';
+	}
+	else if (result == 4) {
+		textElement.innerHTML = 'White won!';
+	}
+}
+
+function handleStateResponse(response) {
+	let state = response['state'];
+	let result = response['result'];
+	
+	if (result == 1) {
+		nextTurn(state);
+	}
+	else {
+		updateGameState(state);
+		showGameResult(result);
+	}
+}
+
 function onMoveSubmitted(event) {
 	event.preventDefault();
 
@@ -389,7 +422,8 @@ function onMoveSubmitted(event) {
 	request.open('POST', url, true);
 	request.setRequestHeader('Content-Type', 'application/json');
 	request.addEventListener('load', () => {
-		nextTurn(JSON.parse(request.responseText));
+		let response = JSON.parse(request.responseText);
+		handleStateResponse(response);
 	});
 	request.send(JSON.stringify({'move_idx': moveIdx}));
 }
@@ -401,7 +435,8 @@ function getComputerMove() {
 	request.open('POST', url, true);
 	request.setRequestHeader('Content-Type', 'application/json');
 	request.addEventListener('load', () => {
-		nextTurn(JSON.parse(request.responseText));
+		let response = JSON.parse(request.responseText);
+		handleStateResponse(response);
 	});
 	request.send(JSON.stringify({}));
 }

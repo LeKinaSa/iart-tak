@@ -19,7 +19,7 @@ def start_game(params: dict) -> dict:
     player_types[Player.WHITE] = params['white_type']
     player_types[Player.BLACK] = params['black_type']
 
-    return state.to_dict()
+    return {'state': state.to_dict(), 'result': state.objective().value}
 
 def get_possible_moves(params: dict) -> dict:
     global state, possible_moves
@@ -34,7 +34,7 @@ def make_move(params: dict) -> dict:
         move = possible_moves[params['move_idx']]
         state = move.play(state)
     
-    return state.to_dict()
+    return {'state': state.to_dict(), 'result': state.objective().value}
 
 
 # Search depths for each board size (for level 3 AI)
@@ -63,7 +63,7 @@ def get_computer_move(params: dict) -> dict:
 
     if move:
         state = move.play(state)
-        return state.to_dict()
+        return {'state': state.to_dict(), 'result': state.objective().value, 'move': move.to_dict()}
 
     return {}
 
