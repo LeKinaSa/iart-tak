@@ -70,7 +70,7 @@ def evaluate(state, player: Player) -> int:
         return 0
     elif (result == Result.WHITE_WIN and player == Player.WHITE) or (result == Result.BLACK_WIN and player == Player.BLACK):
         return int(1e9)
-    elif (result == Result.WHITE_WIN and player == Player.BLACK) or (result == Result.BLACK_WIN and player == Player.BLACK):
+    elif (result == Result.WHITE_WIN and player == Player.BLACK) or (result == Result.BLACK_WIN and player == Player.WHITE):
         return int(-1e9)
     
     def heuristic_num_flats() -> int:
@@ -247,18 +247,18 @@ class State:
                     adjacent = [pos.up(), pos.down(), pos.left(), pos.right()]
                     
                     for adj_pos in adjacent:
-                        if pos not in visited and pos.is_within_bounds(0, self.board_size - 1) and part_of_road(pos, player):
+                        if adj_pos not in visited and adj_pos.is_within_bounds(0, self.board_size - 1) and part_of_road(adj_pos, player):
                             stack.append(adj_pos)
             
             return visited
         
-        end_rows = set(Position(row, 4) for row in range(self.board_size))
-        end_cols = set(Position(4, col) for col in range(self.board_size))
+        end_rows = set(Position(row, self.board_size - 1) for row in range(self.board_size))
+        end_cols = set(Position(self.board_size - 1, col) for col in range(self.board_size))
         
         # Search for white road (horizontal or vertical)
         start_rows = [Position(row, 0) for row in range(self.board_size) if part_of_road(Position(row, 0), Player.WHITE)]
         start_cols = [Position(0, col) for col in range(self.board_size) if part_of_road(Position(0, col), Player.WHITE)]
-        
+
         if end_rows.intersection(dfs(start_rows, Player.WHITE)) or end_cols.intersection(dfs(start_cols, Player.WHITE)):
             return Result.WHITE_WIN
 
