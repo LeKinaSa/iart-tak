@@ -140,7 +140,10 @@ const moveControls = document.getElementById('moveControls');
 const computerMoveIndicator = document.getElementById('computerMoveIndicator');
 const gameResult = document.getElementById('gameResult');
 
-const playerTypes = {}
+const moveHistory = document.getElementById('moves');
+let moveNum = 1;
+
+const playerTypes = {};
 
 function updateGameState(state) {
 	updateBoard(state['board']);
@@ -351,6 +354,23 @@ function nextTurn(state) {
 	}
 }
 
+function addMoveToHistory(move) {
+	let element = document.createElement('p');
+
+	element.innerHTML = moveNum + '. ' + move.type + ' - ' + move.pos;
+
+	if (move.direction != null) {
+		element.innerHTML += ' - ' + Object.keys(directionsMap).find(key => arrayEquals(directionsMap[key], move.direction));
+	}
+
+	if (move.split != null) {
+		element.innerHTML += ' - ' + move.split;
+	}
+
+	moveHistory.appendChild(element);
+	++moveNum;
+}
+
 function showGameResult(result) {
 	moveControls.classList.add('d-none');
 	computerMoveIndicator.classList.add('d-none');
@@ -413,6 +433,8 @@ function onMoveSubmitted(event) {
 
 	if (moveIdx < 0) return;
 
+	addMoveToHistory(possibleMoves[moveIdx]);
+
 	// Clear moves user interface
 	possibleMoves = [];
 
@@ -436,6 +458,7 @@ function getComputerMove() {
 	request.setRequestHeader('Content-Type', 'application/json');
 	request.addEventListener('load', () => {
 		let response = JSON.parse(request.responseText);
+		addMoveToHistory(response['move']);
 		handleStateResponse(response);
 	});
 	request.send(JSON.stringify({}));
