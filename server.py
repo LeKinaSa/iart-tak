@@ -59,7 +59,7 @@ def get_computer_move(params: dict) -> dict:
     elif player_type == 'ai2':
         move = state.negamax(depth - 1, pruning=True, caching=True)
     elif player_type == 'ai3':
-        move = state.negamax(depth, pruning=True, caching=True, statistics=True)
+        move = state.negamax(depth, pruning=True, caching=True)
 
     if move:
         state = move.play(state)
