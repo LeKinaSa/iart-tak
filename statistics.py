@@ -7,7 +7,7 @@ def test_negamax(state, depth, cuts, caching):
     return State.total_time
 
 def write_csv(details, times):
-    file = open("Statistics.csv", "w")
+    file = open("Statistics.csv", "a")
     csv_file = csv.writer(file)
     csv_file.writerow(details)
     csv_file.writerow(times)
