@@ -374,7 +374,7 @@ function getMoveRepresentation(move) {
 
 function addMoveToHistory(move) {
 	let element = document.createElement('p');
-	element.innerHTML = getMoveRepresentation(move);
+	element.innerHTML = moveNum + '. ' + getMoveRepresentation(move);
 	moveHistory.appendChild(element);
 	++moveNum;
 }
