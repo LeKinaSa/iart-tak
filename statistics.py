@@ -1,48 +1,60 @@
 from tak import State
-import openpyxl
+from random import seed, randint
+import csv
 
-def test_negamax(state, depth, cuts, caching, n_try):
+def test_negamax(state, depth, cuts, caching):
     state.negamax(depth, cuts, caching, True)
+    return State.total_time
 
-    file = "Statistics.xlsx"
-    workbook = openpyxl.load_workbook(file)
-    sheet = workbook["Negamax"]
-    n_rows = sheet.max_row
-    line_value = ""
+def write_csv(details, times):
+    file = open("Statistics.csv", "w")
+    csv_file = csv.writer(file)
+    csv_file.writerow(details)
+    csv_file.writerow(times)
+    file.close()
+
+def test(board_size, depth, cuts, caching):
+    details = str(board_size)
     if cuts:
-        line_value += "T"
+        details += "T"
     else:
-        line_value += "F"
+        details += "F"
     if caching:
-        line_value += "T"
+        details += "T"
     else:
-        line_value += "F"
-    line_value += str(depth)
+        details += "F"
+    details += str(depth)
 
-    line = None
-    column = n_try + 2
-    for index in range (1, n_rows + 1):
-        value = sheet.cell(index, 1).value
-        if value == line_value:
-            line = index
+    times = []
+    state = State(board_size)
+    for _ in range(20):
+        times.append(test_negamax(state, depth, cuts, caching))
+        moves = state.possible_moves()
+        if len(moves) == 0:
             break
-    if line == None:
-        raise Exception(line_value + " was not found")
-
-    sheet.cell(line    , column).value = State.nm_calls
-    sheet.cell(line + 1, column).value = State.nm_prunings
-    sheet.cell(line + 2, column).value = State.nm_cache_hits
-    sheet.cell(line + 3, column).value = State.nm_time_possible_moves
-    sheet.cell(line + 4, column).value = State.nm_time_evaluating
+        move = moves[randint(0, len(moves) - 1)]
+        state = move.play(state)
     
-    workbook.save(file)
+    write_csv(details, times)
 
+def statistics():
+    seed()
+    for board_size in range(3, 5):
+        for n in range(6):
+            test(board_size, n,  True,  True)
+        for n in range(5):
+            test(board_size, n,  True, False)
+        for n in range(5):
+            test(board_size, n, False,  True)
+        for n in range(5):
+            test(board_size, n, False, False)
+    return
 
-for n in range(1, 11):
-    for depth in range(1, 6):
-        test_negamax(State(4), depth,  True,  True, n)
-        if depth <= 4:
-            test_negamax(State(4), depth, False,  True, n)
-            test_negamax(State(4), depth,  True, False, n)
-            test_negamax(State(4), depth, False, False, n)
+statistics()
 
+# State.nm_calls
+# State.nm_prunings
+# State.nm_cache_hits
+# State.nm_time_possible_moves
+# State.nm_time_evaluating
+# State.total_time
