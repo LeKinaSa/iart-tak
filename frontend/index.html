@@ -79,7 +79,31 @@
 					</select>
 				</div>
 				<div class="d-none mb-3" id="splitDiv">
-					<label for="split" class="h5 form-label">Split</label>
+					<header class="d-flex justify-content-between align-items-center mb-2">
+						<label for="split" class="h5 form-label">Split</label>
+						<button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#splitHelpModal">?</button>
+						<div class="modal fade" id="splitHelpModal" aria-labelledby="splitHelpModalLabel" aria-hidden="true">
+							<div class="modal-dialog">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title" id="splitHelpModalLabel">Help - Split</h5>
+										<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+									</div>
+									<div class="modal-body">
+										<p>The split is a sequence of numbers separated by commas that indicate the way to split the selected stack.</p>
+										<p>
+											For example, considering the stack has height 4 and the chosen direction is up, the split <b>1, 2, 1</b> 
+											would leave one piece behind in the stack's square, place two pieces one square up and place the final piece
+											two squares up from the stack's original square.
+										</p>
+										<p>
+											The first number always indicates the number of pieces left behind in the stack's current position.
+										</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</header>
 					<input type="text" class="form-control" id="split">
 				</div>
 				<input class="form-control btn-primary" type="submit" value="Make move">

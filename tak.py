@@ -318,7 +318,7 @@ class State:
         
         alpha, beta = 0, 0
         if pruning:
-            alpha, beta = int(-1e9), int(1e9)
+            alpha, beta = int(-1e10), int(1e10)
 
         if caching:
             State.transposition_cache = {}
@@ -374,7 +374,7 @@ class State:
             return evaluation, None
 
         best_move = None
-        max_value = int(-1e9)
+        max_value = int(-1e10)
 
         for move in moves:
             new_state = move.play(self)
