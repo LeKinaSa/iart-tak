@@ -201,6 +201,9 @@ gameTypeControls.querySelector('form').addEventListener('submit', onGameTypeSubm
 
 function readyPlayerMove() {
 	computerMoveIndicator.classList.add('d-none');
+	hintIndicator.classList.add('d-none');
+	suggestedMoveDiv.classList.add('d-none');
+	hintButton.classList.remove('d-none');
 	moveControls.classList.remove('d-none');
 	getPossibleMoves();
 }
@@ -354,19 +357,26 @@ function nextTurn(state) {
 	}
 }
 
-function addMoveToHistory(move) {
-	let element = document.createElement('p');
-
-	element.innerHTML = moveNum + '. ' + move.type + ' - ' + move.pos;
+function getMoveRepresentation(move) {
+	let posRepr = [move.pos[0] + 1, move.pos[1] + 1]
+	let repr = move.type + ' - (' + posRepr + ')';
 
 	if (move.direction != null) {
-		element.innerHTML += ' - ' + Object.keys(directionsMap).find(key => arrayEquals(directionsMap[key], move.direction));
+		let direction = Object.keys(directionsMap).find(key => arrayEquals(directionsMap[key], move.direction));
+		let directionRepr = [directon[0] + 1, direction[1] + 1]
+		repr += ' - (' + directionRepr + ')';
 	}
 
 	if (move.split != null) {
-		element.innerHTML += ' - ' + move.split;
+		repr += ' - [' + move.split + ']';
 	}
 
+	return repr;
+}
+
+function addMoveToHistory(move) {
+	let element = document.createElement('p');
+	element.innerHTML = getMoveRepresentation(move);
 	moveHistory.appendChild(element);
 	++moveNum;
 }
@@ -465,3 +475,28 @@ function getComputerMove() {
 }
 
 moveControls.querySelector('form').addEventListener('submit', onMoveSubmitted);
+
+const hintIndicator = document.getElementById('hintIndicator');
+const suggestedMoveDiv = document.getElementById('suggestedMoveDiv');
+
+function getMoveHint() {
+	hintButton.classList.add('d-none');
+	hintIndicator.classList.remove('d-none');
+
+	let request = new XMLHttpRequest();
+	let url = 'http://localhost:8001/get_move_hint';
+	
+	request.open('POST', url, true);
+	request.setRequestHeader('Content-Type', 'application/json');
+	request.addEventListener('load', () => {
+		let move = JSON.parse(request.responseText);
+		document.getElementById('suggestedMove').innerHTML = getMoveRepresentation(move);
+		hintIndicator.classList.add('d-none');
+		suggestedMoveDiv.classList.remove('d-none');
+	});
+	request.send(JSON.stringify({}));
+}
+
+
+const hintButton = document.getElementById('hintButton');
+hintButton.addEventListener('click', getMoveHint);

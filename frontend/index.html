@@ -108,6 +108,20 @@
 				</div>
 				<input class="form-control btn-primary" type="submit" value="Make move">
 			</form>
+			<hr>
+			<div id="hint" class="d-flex flex-column align-items-center">
+				<button class="btn btn-warning" id="hintButton">Request hint</button>
+				<div id="hintIndicator" class="d-none d-flex flex-column align-items-center">
+					<h5>Computer is thinking...</h5>
+					<div class="spinner-border text-primary" role="status">
+						<span class="visually-hidden">Thinking...</span>
+					</div>
+				</div>
+				<div id="suggestedMoveDiv" class="d-none d-flex flex-column align-items-center">
+					<h5>Suggested move</h5>
+					<p id="suggestedMove"></p>
+				</div>
+			</div>
 		</div>
 
 		<div class="d-flex flex-column align-items-center gap-2 d-none controls bg-light p-3" id="computerMoveIndicator">
