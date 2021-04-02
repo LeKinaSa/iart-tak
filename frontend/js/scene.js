@@ -362,9 +362,7 @@ function getMoveRepresentation(move) {
 	let repr = move.type + ' - (' + posRepr + ')';
 
 	if (move.direction != null) {
-		let direction = Object.keys(directionsMap).find(key => arrayEquals(directionsMap[key], move.direction));
-		let directionRepr = [directon[0] + 1, direction[1] + 1]
-		repr += ' - (' + directionRepr + ')';
+		repr += ' - ' + Object.keys(directionsMap).find(key => arrayEquals(directionsMap[key], move.direction));
 	}
 
 	if (move.split != null) {

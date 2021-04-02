@@ -64,4 +64,5 @@ def get_partitions(num: int) -> set:
         for y in get_partitions(num - x):
             answer.add((x, ) + y)
 
+    partition_cache[num] = answer
     return answer
