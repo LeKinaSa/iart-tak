@@ -295,6 +295,7 @@ class State:
         pass
     
     # Statistics for the negamax algorithm
+    total_time = 0
     nm_calls = 0
     nm_prunings = 0
     nm_cache_hits = 0
@@ -333,6 +334,7 @@ class State:
         end = time.time()
 
         if statistics:
+            State.total_time = end - start
             print("Total execution time:", end - start)
             print("Number of positions analysed:", State.nm_calls)
             print("Number of cuts:", State.nm_prunings)
