@@ -1,7 +1,7 @@
 
 from typing import List, Callable
 from enum import Enum, auto
-from copy import deepcopy
+import copy
 from pprint import pprint
 import time
 
@@ -201,7 +201,7 @@ def heuristic_influence(state, player) -> int:
 
     return value
 
-def evaluate(state, player: Player) -> int:
+def evaluate(state, player: Player, level: int = 3) -> int:
     '''Returns a number representing the value of this game state for the given player'''
 
     result = state.objective()
@@ -213,11 +213,28 @@ def evaluate(state, player: Player) -> int:
     elif (result == Result.WHITE_WIN and player == Player.BLACK) or (result == Result.BLACK_WIN and player == Player.WHITE):
         return int(-1e9)
 
+    value = 0
+
     # The overall evaluation can be fine-tuned by adjusting each heuristic's multiplier
-    value = 10 * heuristic_num_flats(state, player) + 5 * heuristic_corner_pieces(state, player) + heuristic_penalty_walls(state, player) + \
-        5 * heuristic_captured_pieces(state, player) + 3 * heuristic_nearness_to_optimal_road(state, player)
+    if level == 1:
+        value = 10 * heuristic_num_flats(state, player)
+    elif level == 2:
+        value = 10 * heuristic_num_flats(state, player) + 5 * heuristic_captured_pieces(state, player)
+    elif level == 3:
+        value = 10 * heuristic_num_flats(state, player) + 5 * heuristic_corner_pieces(state, player) + heuristic_penalty_walls(state, player) + \
+            5 * heuristic_captured_pieces(state, player) + 3 * heuristic_nearness_to_optimal_road(state, player)
 
     return value
+
+def evaluate_easy(state, player: Player) -> int:
+    return evaluate(state, player, 1)
+
+def evaluate_medium(state, player: Player) -> int:
+    return evaluate(state, player, 2)
+
+def evaluate_hard(state, player: Player) -> int:
+    return evaluate(state, player, 3)
+
 
 class State:
     def __init__(self, board_size = 5):
@@ -234,6 +251,20 @@ class State:
             Player.WHITE: capstones_for_size[board_size],
             Player.BLACK: capstones_for_size[board_size]
         }
+    
+    def copy(self):
+        state_copy = State(self.board_size)
+
+        state_copy.first_turn = self.first_turn
+        state_copy.current_player = self.current_player
+        state_copy.num_flats = copy.copy(self.num_flats)
+        state_copy.num_caps = copy.copy(self.num_caps)
+
+        for row in range(self.board_size):
+            for col in range(self.board_size):
+                state_copy.board[row][col] = copy.copy(self.board[row][col])
+        
+        return state_copy
     
     def __hash__(self):
         board_tuple = tuple(tuple(tuple(self.board[row][col]) for col in range(self.board_size) for row in range(self.board_size)))
@@ -343,7 +374,7 @@ class State:
     nm_time_evaluating = 0
 
     transposition_cache = {}
-    def negamax(self, depth: int, evaluation_function: Callable = evaluate, pruning: bool = False, caching: bool = False, statistics: bool = False):
+    def negamax(self, depth: int, evaluation_function: Callable = evaluate_hard, pruning: bool = False, caching: bool = False, statistics: bool = False):
         '''
         Implementation of the negamax algorithm, a variant of minimax that takes advantage of the
         zero-sum property of two-player adversarial games. Includes parameters for specifying the
@@ -547,7 +578,7 @@ class PlaceFlat(Move):
         return not state.board[self.pos.row][self.pos.col] and state.num_flats[state.current_player] > 0
     
     def play(self, state: State) -> State:
-        state_copy = deepcopy(state)
+        state_copy = state.copy()
 
         if state_copy.first_turn:
             state_copy.board[self.pos.row][self.pos.col].append(Piece(-state_copy.current_player, PieceType.FLAT))
@@ -579,7 +610,7 @@ class PlaceWall(Move):
         return not state.board[self.pos.row][self.pos.col] and state.num_flats[state.current_player] > 0 and not state.first_turn
     
     def play(self, state: State) -> State:
-        state_copy = deepcopy(state)
+        state_copy = state.copy()
 
         state_copy.board[self.pos.row][self.pos.col].append(Piece(state_copy.current_player, PieceType.WALL))
         state_copy.num_flats[state_copy.current_player] -= 1
@@ -604,7 +635,7 @@ class PlaceCap(Move):
         return not state.board[self.pos.row][self.pos.col] and state.num_caps[state.current_player] > 0 and not state.first_turn
     
     def play(self, state: State) -> State:
-        state_copy = deepcopy(state)
+        state_copy = state.copy()
 
         state_copy.board[self.pos.row][self.pos.col].append(Piece(state_copy.current_player, PieceType.CAPSTONE))
         state_copy.num_caps[state_copy.current_player] -= 1
@@ -659,7 +690,7 @@ class MovePiece(Move):
         return True
     
     def play(self, state: State) -> State:
-        state_copy = deepcopy(state)
+        state_copy = state.copy()
 
         stack = state_copy.board[self.pos.row][self.pos.col]
         piece = stack[-1]
@@ -696,7 +727,7 @@ class SplitStack(Move):
         if len(stack) <= 1 or len(self.split) <= 1 or stack[-1].color != state.current_player or len(stack) != sum(self.split):
             return False
         
-        stack_copy = deepcopy(stack)
+        stack_copy = copy.copy(stack)
         for i, num_pieces in enumerate(self.split):
             if i != 0:
                 if num_pieces == 0:
@@ -716,7 +747,7 @@ class SplitStack(Move):
         return True
 
     def play(self, state: State) -> State:
-        state_copy = deepcopy(state)
+        state_copy = state.copy()
 
         stack = state_copy.board[self.pos.row][self.pos.col]
         state_copy.board[self.pos.row][self.pos.col] = []
