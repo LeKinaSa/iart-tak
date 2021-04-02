@@ -3,7 +3,7 @@ from http import HTTPStatus
 
 import json
 
-from tak import State, Player
+from tak import State, Player, evaluate_easy, evaluate_medium
 
 state = None
 player_types = {}
@@ -55,9 +55,9 @@ def get_computer_move(params: dict) -> dict:
     depth = depths[state.board_size]
 
     if player_type == 'ai1':
-        move = state.negamax(depth - 2, pruning=True, caching=True)
+        move = state.negamax(depth - 2, evaluate_easy, True, True)
     elif player_type == 'ai2':
-        move = state.negamax(depth - 1, pruning=True, caching=True)
+        move = state.negamax(depth - 1, evaluate_medium, True, True)
     elif player_type == 'ai3':
         move = state.negamax(depth, pruning=True, caching=True)
 

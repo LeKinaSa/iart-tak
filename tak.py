@@ -108,11 +108,11 @@ def heuristic_penalty_walls(state, player) -> int:
                 adjacent_stacks = filter(lambda x: x, adjacent_stacks)
 
                 if not adjacent_stacks:
-                    value += player * stack[0].color * -5
+                    value -= player * stack[0].color
                 else:
                     for adj_stack in adjacent_stacks:
                         if adj_stack[-1].type == PieceType.CAPSTONE and adj_stack[-1].color != player:
-                            value += player * stack[0].color * -5
+                            value -= player * stack[0].color
     
     return value
 
@@ -217,12 +217,12 @@ def evaluate(state, player: Player, level: int = 3) -> int:
 
     # The overall evaluation can be fine-tuned by adjusting each heuristic's multiplier
     if level == 1:
-        value = 10 * heuristic_num_flats(state, player)
+        value = 10 * heuristic_num_flats(state, player) + 3 * heuristic_captured_pieces(state, player) + heuristic_influence(state, player)
     elif level == 2:
-        value = 10 * heuristic_num_flats(state, player) + 5 * heuristic_captured_pieces(state, player)
+        value = 10 * heuristic_num_flats(state, player) + 3 * heuristic_captured_pieces(state, player) + heuristic_influence(state, player) + heuristic_penalty_walls(state, player)
     elif level == 3:
-        value = 10 * heuristic_num_flats(state, player) + 5 * heuristic_corner_pieces(state, player) + heuristic_penalty_walls(state, player) + \
-            5 * heuristic_captured_pieces(state, player) + 3 * heuristic_nearness_to_optimal_road(state, player)
+        value = 10 * heuristic_num_flats(state, player) + heuristic_penalty_walls(state, player) + heuristic_influence(state, player) + \
+            3 * heuristic_captured_pieces(state, player) + heuristic_nearness_to_optimal_road(state, player)
 
     return value
 
