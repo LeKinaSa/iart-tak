@@ -61,8 +61,8 @@ def statistics():
         for n in range(1, 6):
             test(board_size, n,  True,  True, difficulty)
         
-        if difficulty != "easy":
-            break
+        if difficulty != "hard":
+            continue
         
         for n in range(1, 5):
             test(board_size, n,  True, False, difficulty)
