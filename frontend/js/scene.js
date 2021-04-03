@@ -35,6 +35,7 @@ positionHighlighter.position.x = 0.5;
 positionHighlighter.position.z = 0.5;
 positionHighlighter.position.y = 1000;
 
+
 scene.add( positionHighlighter );
 
 let length = 0;
@@ -118,23 +119,6 @@ function addStack(row, col, stack, boardSize) {
 		pieceGroup.add(pieceGeometry);
 	}
 }
-
-
-// A sum example
-/*
-var xhr = new XMLHttpRequest();
-var url = "http://localhost:8001/sum";
-xhr.open("POST", url, true);
-xhr.setRequestHeader("Content-Type", "application/json");
-xhr.onreadystatechange = function () {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-        var json = JSON.parse(xhr.responseText);
-        console.log(json);
-    }
-};
-var data = JSON.stringify({"numbers" : [1, 2, 3, 4]});
-xhr.send(data);
-*/
 
 /*
  *  Code related to User Interface controls
