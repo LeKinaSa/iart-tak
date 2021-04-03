@@ -1,22 +1,26 @@
 from tak import State, evaluate_easy, evaluate_medium, evaluate_hard
-from random import seed, randint
 import csv
+import time
 
 def test_negamax(state, depth, pruning, caching, evaluation_function):
     '''Obtains the total time needed by negamax algorithm to find a solution.'''
-    state.negamax(depth, evaluation_function, pruning, caching, True)
-    return State.total_time
+    move = state.negamax(depth, evaluation_function, pruning, caching, True)
+    return (State.total_time, move)
 
-def write_csv(times):
-    '''Write the statistics csv file.'''
-    file = open("Statistics.csv", "a")
+def write_csv(times, moves):
+    '''Write the statistics to csv files.'''
+    file = open("times.csv", "a")
     csv_file = csv.writer(file)
     csv_file.writerow(times)
+    file.close()
+    file = open("moves.csv", "a")
+    csv_file = csv.writer(file)
+    csv_file.writerow(moves)
     file.close()
 
 def test(board_size, depth, cuts, caching, evaluation):
     '''Obtains the total time for each of 20 iterations of the negamax algorithm (or until the game ends).'''
-    iterations = 20
+    iterations = 50
 
     details = str(board_size)
     if cuts:
@@ -27,7 +31,6 @@ def test(board_size, depth, cuts, caching, evaluation):
         details += "T"
     else:
         details += "F"
-    details += str(depth)
     details += evaluation
     if evaluation == "easy":
         evaluation_function = evaluate_easy
@@ -35,35 +38,53 @@ def test(board_size, depth, cuts, caching, evaluation):
         evaluation_function = evaluate_medium
     else:
         evaluation_function = evaluate_hard
-
+    details += str(depth)
+    
     times = [details]
+    choices = [details]
     state = State(board_size)
     for _ in range(iterations):
-        times.append(test_negamax(state, depth, cuts, caching, evaluation_function))
+        (time, move) = test_negamax(state, depth, cuts, caching, evaluation_function)
+        times.append(time)
         moves = state.possible_moves()
-        if len(moves) == 0:
+        choices.append(len(moves))
+        if len(moves) == 0 or move == None:
             break
-        move = moves[randint(0, len(moves) - 1)]
         state = move.play(state)
     
-    write_csv(times)
+    write_csv(times, choices)
 
 def statistics():
-    '''Obtain statistics for our negamax algorithm.'''
-    seed()
-    for board_size in range(3, 5):
-        for n in range(6):
-            test(board_size, n,  True,  True, "easy")
-        for n in range(5):
-            test(board_size, n,  True, False, "easy")
-        for n in range(4):
-            test(board_size, n, False,  True, "easy")
-        for n in range(2):
-            test(board_size, n, False, False, "easy")
+    '''Obtain statistics for the total execution times from our negamax algorithm.'''
+    for difficulty in ["easy", "medium", "hard"]:
+        board_size = 3
+        for n in range(1, 6):
+            test(board_size, n,  True,  True, difficulty)
+        for n in range(1, 5):
+            test(board_size, n,  True, False, difficulty)
+        for n in range(1, 3):
+            test(board_size, n, False,  True, difficulty)
+        test(board_size, 1, False, False, difficulty)
+        
+        board_size = 4
+        for n in range(1, 5):
+            test(board_size, n,  True,  True, difficulty)
+        for n in range(1, 3):
+            test(board_size, n,  True, False, difficulty)
+        for n in range(1, 2):
+            test(board_size, n, False,  True, difficulty)
+        test(board_size, 1, False, False, difficulty)
+
+        board_size = 5
+        for n in range(1, 4):
+            test(board_size, n, True, True, difficulty)
     return
 
+start = time.time()
 statistics()
+end = time.time()
 
+print(end - start)
 # State.nm_calls
 # State.nm_prunings
 # State.nm_cache_hits

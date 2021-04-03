@@ -362,9 +362,6 @@ class State:
             return Result.DRAW
 
         return Result.NOT_FINISHED
-
-    def possible_states(self) -> List:
-        pass
     
     # Statistics for the negamax algorithm
     total_time = 0
@@ -407,12 +404,12 @@ class State:
 
         if statistics:
             State.total_time = end - start
-            print("Total execution time:", end - start)
-            print("Number of positions analysed:", State.nm_calls)
-            print("Number of cuts:", State.nm_prunings)
-            print("Number of cache hits:", State.nm_cache_hits)
-            print("Time spent calculting possible moves:", State.nm_time_possible_moves)
-            print("Time spent evaluating:", State.nm_time_evaluating)
+            #print("Total execution time:", end - start)
+            #print("Number of positions analysed:", State.nm_calls)
+            #print("Number of cuts:", State.nm_prunings)
+            #print("Number of cache hits:", State.nm_cache_hits)
+            #print("Time spent calculting possible moves:", State.nm_time_possible_moves)
+            #print("Time spent evaluating:", State.nm_time_evaluating)
 
         return move
     
