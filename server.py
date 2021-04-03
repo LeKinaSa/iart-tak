@@ -9,10 +9,11 @@ state = None
 player_types = {}
 possible_moves = []
 
-def _sum(l : dict) -> dict:
-    return {"result" : sum(l["numbers"])}
-
 def start_game(params: dict) -> dict:
+    '''
+    Start a new game with the specified parameters (board size and the type of each player).
+    Returns the starting state in a JSON-compatible format.
+    '''
     global state, player_types
 
     state = State(params['size'])
@@ -22,12 +23,14 @@ def start_game(params: dict) -> dict:
     return {'state': state.to_dict(), 'result': state.objective().value}
 
 def get_possible_moves(params: dict) -> dict:
+    '''Returns a list of all possible moves in a JSON-compatible format.'''
     global state, possible_moves
 
     possible_moves = state.possible_moves()
     return {'possible_moves': [move.to_dict() for move in possible_moves]}
 
 def make_move(params: dict) -> dict:
+    '''Makes a move and returns the resulting state in a JSON-compatible format.'''
     global state, possible_moves
     
     if possible_moves:
@@ -45,10 +48,15 @@ depths = {
 }
 
 def get_move_hint(params: dict) -> dict:
+    '''Returns the computer's best move for the current game state in a JSON-compatible format.'''
     depth = depths[state.board_size]
     return state.negamax(depth, pruning=True, caching=True).to_dict()
 
 def get_computer_move(params: dict) -> dict:
+    '''
+    Obtains the computer move and corresponding game state in a JSON-compatible format.
+    The evaluation function used and the negamax depth are decided by the level of the AI chosen previously.
+    '''
     global state, player_types
 
     player_type = player_types[state.current_player]
@@ -70,7 +78,6 @@ def get_computer_move(params: dict) -> dict:
 # Each URL (request) is mapped to a different function
 # These functions take in a dictionary and return a dictionary
 endpoints = {
-    '/sum' : _sum,
     '/start_game': start_game,
     '/get_possible_moves': get_possible_moves,
     '/make_move': make_move,
@@ -90,10 +97,12 @@ class _RequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        '''Handle GET requests'''
         self._set_headers()
         self.wfile.write(json.dumps([{"Hello" : "There"}]).encode('utf-8'))
 
     def do_POST(self):
+        '''Handle POST requests (using one of the endpoints defined previously)'''
         length = int(self.headers.get('content-length'))
         message = json.loads(self.rfile.read(length))
         if self.path in endpoints:

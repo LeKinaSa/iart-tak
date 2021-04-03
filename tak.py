@@ -77,21 +77,6 @@ def heuristic_num_flats(state, player) -> int:
     
     return value
 
-def heuristic_corner_pieces(state, player) -> int:
-    '''
-    Adds value to controlling the corners, since they can be used to form a road both horizontally
-    and vertically
-    '''
-    value = 0
-    corners = [Position(0, 0), Position(0, state.board_size - 1), Position(state.board_size - 1, 0), Position(state.board_size - 1, state.board_size - 1)]
-
-    for position in corners:
-        stack = state.board[position.row][position.col]
-        if stack and stack[-1].type != PieceType.WALL:
-            value += player * stack[-1].color
-
-    return value
-
 def heuristic_penalty_walls(state, player) -> int:
     '''Adds a penalty for having walls near empty spaces or having walls near an opponent's capstone'''
     value = 0
@@ -227,12 +212,15 @@ def evaluate(state, player: Player, depth: int, level: int = 3) -> int:
     return value
 
 def evaluate_easy(state, player: Player, depth: int) -> int:
+    '''Returns the game state evaluation for the easy (level 1) AI'''
     return evaluate(state, player, depth, 1)
 
 def evaluate_medium(state, player: Player, depth: int) -> int:
+    '''Returns the game state evaluation for the medium (level 2) AI'''
     return evaluate(state, player, depth, 2)
 
 def evaluate_hard(state, player: Player, depth: int) -> int:
+    '''Returns the game state evaluation for the hard (level 3) AI'''
     return evaluate(state, player, depth, 3)
 
 
@@ -253,6 +241,7 @@ class State:
         }
     
     def copy(self):
+        '''Returns a copy of the game state. This custom copy function is more efficient than deepcopy'''
         state_copy = State(self.board_size)
 
         state_copy.first_turn = self.first_turn
@@ -399,7 +388,7 @@ class State:
             State.nm_time_evaluating = 0
 
         start = time.time()
-        _, move = self.negamax_recursive(depth, evaluation_function, pruning, caching, statistics, alpha, beta, 1)
+        _, move = self.negamax_recursive(depth, evaluation_function, pruning, caching, statistics, alpha, beta)
         end = time.time()
 
         if statistics:
@@ -413,7 +402,7 @@ class State:
 
         return move
     
-    def negamax_recursive(self, depth: int, evaluation_function: Callable, pruning: bool, caching: bool, statistics: bool, alpha: int, beta: int, player: int):
+    def negamax_recursive(self, depth: int, evaluation_function: Callable, pruning: bool, caching: bool, statistics: bool, alpha: int, beta: int):
         original_alpha = alpha
         
         if statistics:
@@ -460,7 +449,7 @@ class State:
         for move in moves:
             new_state = move.play(self)
             
-            value = -new_state.negamax_recursive(depth - 1, evaluation_function, pruning, caching, statistics, -beta, -alpha, -player)[0]
+            value = -new_state.negamax_recursive(depth - 1, evaluation_function, pruning, caching, statistics, -beta, -alpha)[0]
 
             if value > max_value:
                 max_value = value
@@ -484,70 +473,8 @@ class State:
         
         return max_value, best_move
     
-    def minimax(self, depth: int, pruning: bool):
-        if depth <= 0:
-            return None
-        alpha = 0
-        beta = 0
-        if pruning:
-            alpha = int(-1e9)
-            beta  = int(1e9)
-        (_, move) = self.minimax_max(depth, pruning, alpha, beta)
-        return move
-    
-    def minimax_max(self, depth: int, pruning: bool, alpha: int, beta: int):
-        moves = self.possible_moves()
-
-        if depth == 0 or not moves:
-            return evaluate(self, self.current_player, depth), None
-        
-        best_move = None
-        max_value = int(-1e9)
-        for move in moves:
-            new_state = move.play(self)
-            
-            value, _ = new_state.minimax_min(depth - 1, pruning, alpha, beta)
-            
-            if value > max_value:
-                max_value = value
-                best_move = move
-            
-            if pruning:
-                if max_value >= beta:
-                    return (max_value, move)
-        
-                if max_value > alpha:
-                    alpha = max_value
-            
-        return max_value, best_move
-    
-    def minimax_min(self, depth: int, pruning: bool, alpha: int, beta: int):
-        moves = self.possible_moves()
-        
-        if depth == 0 or not moves:
-            return evaluate(self, self.current_player, depth), None
-        
-        best_move = None
-        min_value = int(1e9)
-        for move in moves:
-            new_state = move.play(self)
-            
-            value, _ = new_state.minimax_max(depth - 1, pruning, alpha, beta)
-            
-            if value < min_value:
-                min_value = value
-                best_move = move
-            
-            if pruning:
-                if min_value <= alpha:
-                    return (min_value, move)
-    
-                if min_value < beta:
-                    beta = min_value
-            
-        return min_value, best_move
-    
     def to_dict(self) -> dict:
+        '''Returns a dictionary representation of State (used for communicating with front-end through JSON messages)'''
         board_json = [[[repr(piece) for piece in stack] for stack in row] for row in self.board]
 
         return {
@@ -561,12 +488,15 @@ class State:
 # Pseudo-abstract class
 class Move:
     def is_valid(self, state: State) -> bool:
+        '''Returns true if this move is valid for the specified game state, false otherwise'''
         raise NotImplementedError()
 
     def play(self, state: State) -> State:
+        '''Returns the game state after this move has been played'''
         raise NotImplementedError()
     
     def to_dict(self) -> dict:
+        '''Returns a dictionary representation of Move (used for communicating with front-end through JSON messages)'''
         raise NotImplementedError()
 
 class PlaceFlat(Move):
@@ -580,6 +510,7 @@ class PlaceFlat(Move):
         state_copy = state.copy()
 
         if state_copy.first_turn:
+            # During the first turn, players place one of their opponent's flat pieces
             state_copy.board[self.pos.row][self.pos.col].append(Piece(-state_copy.current_player, PieceType.FLAT))
             state_copy.num_flats[-state_copy.current_player] -= 1
 
@@ -696,6 +627,7 @@ class MovePiece(Move):
         stack_to = state_copy.board[self.pos_to.row][self.pos_to.col]
 
         if piece.type == PieceType.CAPSTONE and stack_to and stack_to[-1].type == PieceType.WALL:
+            # Capstone converts a wall to a flat piece
             stack_to[-1].type = PieceType.FLAT
         
         stack_to.append(piece)
@@ -758,6 +690,7 @@ class SplitStack(Move):
             stack_slice, stack = stack[:num_pieces], stack[num_pieces:]
 
             if stack_slice and stack_to and stack_slice[0].type == PieceType.CAPSTONE and stack_to[-1].type == PieceType.WALL:
+                # Capstone converts a wall to a flat piece
                 stack_to[-1].type = PieceType.FLAT
             
             stack_to += stack_slice

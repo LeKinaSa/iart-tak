@@ -17,4 +17,4 @@ Before attempting to run the program, make sure the following requirements are m
 To run the program, follow these steps:
 * Start the Python server by executing the `server.py` script
 * Open the HTML/JS client in the `frontend/` folder (for example using the **Live Server** VSCode extension)
-* TODO
+* Select the game's parameters and start playing
