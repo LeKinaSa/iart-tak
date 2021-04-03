@@ -29,7 +29,6 @@ const lightmarble = new THREE.MeshBasicMaterial({ map: textureLightMarble });
 
 const geometry = new THREE.BoxGeometry(0.8, 0.2, 0.8);
 const cube = new THREE.Mesh(geometry, darkwood);
-// scene.add( cube );
 
 
 camera.position.x = 5;
@@ -111,23 +110,6 @@ function addStack(row, col, stack, boardSize) {
 		pieceGroup.add(pieceGeometry);
 	}
 }
-
-
-// A sum example
-/*
-var xhr = new XMLHttpRequest();
-var url = "http://localhost:8001/sum";
-xhr.open("POST", url, true);
-xhr.setRequestHeader("Content-Type", "application/json");
-xhr.onreadystatechange = function () {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-        var json = JSON.parse(xhr.responseText);
-        console.log(json);
-    }
-};
-var data = JSON.stringify({"numbers" : [1, 2, 3, 4]});
-xhr.send(data);
-*/
 
 /*
  *  Code related to User Interface controls
