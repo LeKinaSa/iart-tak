@@ -19,18 +19,25 @@ const textureDarkWood = new THREE.TextureLoader().load('images/darkwood.png');
 const textureLightWood = new THREE.TextureLoader().load('images/lightwood.png');
 const textureDarkMarble = new THREE.TextureLoader().load('images/blackmarble.jpg');
 const textureLightMarble = new THREE.TextureLoader().load('images/whitemarble.png');
+const textureRed          = new THREE.TextureLoader().load('images/red.jpg');
 
 const darkwood = new THREE.MeshBasicMaterial({ map: textureDarkWood });
 const lightwood = new THREE.MeshBasicMaterial({ map: textureLightWood });
 
 const darkmarble = new THREE.MeshBasicMaterial({ map: textureDarkMarble });
 const lightmarble = new THREE.MeshBasicMaterial({ map: textureLightMarble });
+const red = new THREE.MeshBasicMaterial({ map: textureRed });
 
 
-const geometry = new THREE.BoxGeometry(0.8, 0.2, 0.8);
-const cube = new THREE.Mesh(geometry, darkwood);
-// scene.add( cube );
+const geometry = new THREE.BoxGeometry(1, 0.25, 1);
+const positionHighlighter = new THREE.Mesh(geometry, red);
+positionHighlighter.position.x = 0.5;
+positionHighlighter.position.z = 0.5;
+positionHighlighter.position.y = 1000;
 
+scene.add( positionHighlighter );
+
+let length = 0;
 
 camera.position.x = 5;
 camera.position.y = 5;
@@ -154,6 +161,7 @@ function hostAvailable(url) {
 	} catch (e){ // CORS exception
 		return false;
 	}
+	return true;
   }
 
 function updateGameState(state) {
@@ -184,6 +192,7 @@ function onGameTypeSubmitted(event) {
 
 		let response = JSON.parse(request.responseText);
 		let state = response['state'];
+		length = state['board'].length;
 
 		generateBoard(state['board'].length);
 		updateGameState(state);
@@ -294,6 +303,21 @@ const directionsMap = {
 	'Right': [0, 1]
 }
 
+function onCoordinatechange() {
+	let row = Number.parseInt(rowElement.value) - 1;
+	let col = Number.parseInt(colElement.value) - 1;
+
+	if (Number.isNaN(row) || Number.isNaN(col) || row < 0 || col < 0 || row >= length || col >= length) {
+		positionHighlighter.position.y = 1000;
+		return;
+	}
+
+	positionHighlighter.position.y = 0;
+	
+	positionHighlighter.position.x = row - length / 2 + 0.5;
+	positionHighlighter.position.z = -(col - length / 2 + 0.5);
+}
+
 function validateParams() {
 	let pos = [Number.parseInt(rowElement.value) - 1, Number.parseInt(colElement.value) - 1];
 	let direction = directionsMap[directionElement.value];
@@ -333,6 +357,8 @@ function validateParams() {
 	}
 }
 
+document.getElementById('row').addEventListener('change', onCoordinatechange);
+document.getElementById('col').addEventListener('change', onCoordinatechange);
 document.getElementById('row').addEventListener('change', validateParams);
 document.getElementById('col').addEventListener('change', validateParams);
 document.getElementById('direction').addEventListener('change', validateParams);
