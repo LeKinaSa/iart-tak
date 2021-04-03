@@ -7,7 +7,7 @@ def test_negamax(state, depth, pruning, caching, evaluation_function):
     return (State.total_time, move)
 
 def write_csv(filename, statistics):
-    '''Write the statistics to csv file.'''
+    '''Writes the statistics to csv file.'''
     file = open(filename, "a")
     csv_file = csv.writer(file)
     csv_file.writerow(statistics)
@@ -34,7 +34,7 @@ def test_totals(board_size, n):
     write_csv("moves.csv", choices)
 
 def test_heuristics(evaluation, n):
-    '''Obtains the total time for each of the first n iterations of the negamax algorithm (or until the game ends).'''
+    '''Measures the impact of the evaluation function used on the totla time taken.'''
 
     details = "4TT" + evaluation + "3"
     if evaluation == "easy":
@@ -57,7 +57,8 @@ def test_heuristics(evaluation, n):
     write_csv("heuristics.csv", times)
 
 def test_parameters(cuts, caching, n):
-    '''Obtains the total time for each of the first n iterations of the negamax algorithm (or until the game ends).'''
+    '''Measures the impact of the optimizations to the negamax algorithm on the total time taken.'''
+
     details = "4"
     if cuts:
         details += "T"
@@ -82,6 +83,8 @@ def test_parameters(cuts, caching, n):
     write_csv("parameters.csv", times)
 
 def test_time_percentage(n):
+    '''Measures the percentage of the total time spent calculating possible moves, evaluating positions or playing moves.'''
+
     state = State(4)
 
     time_possible_moves = 0
@@ -114,7 +117,7 @@ def test_time_percentage(n):
     write_csv('time_percentage.csv', [time_possible_moves, time_evaluating, time_playing_moves, time_other])
 
 def statistics():
-    '''Obtain statistics for our negamax algorithm.'''
+    '''Obtains statistics for the negamax algorithm.'''
     
     iterations = 25
     
