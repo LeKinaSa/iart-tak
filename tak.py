@@ -156,8 +156,6 @@ def heuristic_nearness_to_optimal_road(state, player) -> int:
 def heuristic_influence(state, player) -> int:
     '''
     Calculates the number of squares a player's pieces can influence (similar to space control in Chess).
-    Only considers flat pieces and does not consider stacks of height > 1, since the calculations become
-    vastly more complicated when considering the splitting of stacks.
     '''
     value = 0
 
@@ -165,24 +163,24 @@ def heuristic_influence(state, player) -> int:
         for col in range(state.board_size):
             stack = state.board[row][col]
 
-            if len(stack) == 1 and stack[0].type == PieceType.FLAT:
+            if stack:
                 pos = Position(row, col)
                 adjacent = [pos.up(), pos.down(), pos.left(), pos.right()]
-                adjacent = filter(lambda pos: pos.is_within_bounds(0, state.board_size - 1), adjacent)
+                adjacent = list(filter(lambda pos: pos.is_within_bounds(0, state.board_size - 1), adjacent))
 
                 protected = False
                 for adj_pos in adjacent:
                     adj_stack = state.board[adj_pos.row][adj_pos.col]
 
-                    if len(adj_stack) == 1 and adj_stack[0].type == PieceType.FLAT and adj_stack[0].color == stack[0].color:
+                    if adj_stack and adj_stack[-1].color == stack[-1].color:
                         protected = True
                         break
                 
                 for adj_pos in adjacent:
                     adj_stack = state.board[adj_pos.row][adj_pos.col]
 
-                    if not adj_stack or (protected and len(adj_stack) == 1 and adj_stack[0].color != stack[0].color):
-                        value += stack[0].color * player
+                    if not adj_stack or adj_stack[-1].color == stack[-1].color or (protected and adj_stack[-1].type == PieceType.FLAT and adj_stack[-1].color != stack[-1].color):
+                        value += stack[-1].color * player
 
     return value
 
@@ -202,12 +200,12 @@ def evaluate(state, player: Player, depth: int, level: int = 3) -> int:
 
     # The overall evaluation can be fine-tuned by adjusting each heuristic's multiplier
     if level == 1:
-        value = 10 * heuristic_num_flats(state, player) + 3 * heuristic_captured_pieces(state, player) + heuristic_influence(state, player)
+        value = 10 * heuristic_num_flats(state, player) + 2 * heuristic_captured_pieces(state, player) + 2 * heuristic_influence(state, player)
     elif level == 2:
-        value = 10 * heuristic_num_flats(state, player) + 3 * heuristic_captured_pieces(state, player) + heuristic_influence(state, player) + heuristic_penalty_walls(state, player)
+        value = 10 * heuristic_num_flats(state, player) + 2 * heuristic_captured_pieces(state, player) + 2 * heuristic_influence(state, player) + heuristic_penalty_walls(state, player)
     elif level == 3:
-        value = 10 * heuristic_num_flats(state, player) + heuristic_penalty_walls(state, player) + heuristic_influence(state, player) + \
-            3 * heuristic_captured_pieces(state, player) + heuristic_nearness_to_optimal_road(state, player)
+        value = 10 * heuristic_num_flats(state, player) + heuristic_penalty_walls(state, player) + 2 * heuristic_influence(state, player) + \
+            2 * heuristic_captured_pieces(state, player) + heuristic_nearness_to_optimal_road(state, player)
 
     return value
 
