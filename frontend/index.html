@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Tak Client in three.js</title>
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous" defer></script>
+		<script src="js/three.js" defer></script>
+		<script src="js/scene.js" defer></script>
+		<link rel="stylesheet" href="style.css">
+	</head>
+	<body>
+		<div class="d-none controls bg-light p-3" id="gameTypeControls">
+			<form>
+				<h4 class="text-center mb-3">Choose game type</h4>
+				<label for="boardSize" class="h5 form-label">Board size</label>
+				<input type="number" class="form-control mb-2" id="boardSize" min="3" max="5" value="4">
+				<label for="whiteType" class="h5 form-label">White</label>
+				<select class="form-select mb-2" id="whiteType">
+					<option selected value="human">Human</option>
+					<option value="ai1">AI Level 1 (Easy)</option>
+					<option value="ai2">AI Level 2 (Medium)</option>
+					<option value="ai3">AI Level 3 (Hard)</option>
+				</select>
+				<label for="whiteType" class="h5 form-label">Black</label>
+				<select class="form-select mb-3" id="blackType">
+					<option selected value="human">Human</option>
+					<option value="ai1">AI Level 1 (Easy)</option>
+					<option value="ai2">AI Level 2 (Medium)</option>
+					<option value="ai3">AI Level 3 (Hard)</option>
+				</select>
+				<input class="form-control btn-primary" type="submit" value="Start">
+			</form>
+		</div>
+
+		<div class="d-none controls bg-light p-3" id="moveControls">
+			<form>
+				<h4 class="text-center mb-3">Choose move</h4>
+				<label for="moveType" class="h5 form-label">Move type</label>
+				<select class="form-select mb-3" id="moveType">
+				</select>
+				<div class="d-none mb-3" id="posDiv">
+					<header class="d-flex justify-content-between">
+						<h5>Position</h5>
+						<button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#coordsHelpModal">?</button>
+						<div class="modal fade" id="coordsHelpModal" aria-labelledby="coordsHelpModalLabel" aria-hidden="true">
+							<div class="modal-dialog">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title" id="coordsHelpModalLabel">Help - Coordinates</h5>
+										<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+									</div>
+									<div class="modal-body">
+										<p>Coordinates start at the top left corner, row numbers increase downwards and column numbers increase to the right.</p>
+										<p>Coordinates range from <b>1</b> to <b>board size</b>.</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</header>
+					<div class="row">
+						<div class="col">
+							<label for="row" class="form-label">Row</label>
+							<input type="number" class="form-control" id="row" min="1" max="5" value="1">
+						</div>
+						<div class="col">
+							<label for="col" class="form-label">Column</label>
+							<input type="number" class="form-control" id="col" min="1" max="5" value="1">
+						</div>
+					</div>
+				</div>
+				<div class="d-none mb-3" id="directionDiv">
+					<label for="direction" class="h5 form-label">Direction</label>
+					<select class="form-select" id="direction">
+						<option>Up</option>
+						<option>Down</option>
+						<option>Left</option>
+						<option>Right</option>
+					</select>
+				</div>
+				<div class="d-none mb-3" id="splitDiv">
+					<header class="d-flex justify-content-between align-items-center mb-2">
+						<label for="split" class="h5 form-label">Split</label>
+						<button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#splitHelpModal">?</button>
+						<div class="modal fade" id="splitHelpModal" aria-labelledby="splitHelpModalLabel" aria-hidden="true">
+							<div class="modal-dialog">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title" id="splitHelpModalLabel">Help - Split</h5>
+										<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+									</div>
+									<div class="modal-body">
+										<p>The split is a sequence of numbers separated by commas that indicate the way to split the selected stack.</p>
+										<p>
+											For example, considering the stack has height 4 and the chosen direction is up, the split <b>1, 2, 1</b> 
+											would leave one piece behind in the stack's square, place two pieces one square up and place the final piece
+											two squares up from the stack's original square.
+										</p>
+										<p>
+											The first number always indicates the number of pieces left behind in the stack's current position.
+										</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</header>
+					<input type="text" class="form-control" id="split">
+				</div>
+				<input class="form-control btn-primary" type="submit" value="Make move">
+			</form>
+			<hr>
+			<div id="hint" class="d-flex flex-column align-items-center">
+				<button class="btn btn-warning" id="hintButton">Request hint</button>
+				<div id="hintIndicator" class="d-none d-flex flex-column align-items-center">
+					<h5>Computer is thinking...</h5>
+					<div class="spinner-border text-primary" role="status">
+						<span class="visually-hidden">Thinking...</span>
+					</div>
+				</div>
+				<div id="suggestedMoveDiv" class="d-none d-flex flex-column align-items-center">
+					<h5>Suggested move</h5>
+					<p id="suggestedMove"></p>
+				</div>
+			</div>
+		</div>
+
+		<div class="d-flex flex-column align-items-center gap-2 d-none controls bg-light p-3" id="computerMoveIndicator">
+			<h4>Computer is thinking...</h4>
+			<div class="spinner-border text-primary" role="status">
+				<span class="visually-hidden">Thinking...</span>
+			</div>
+		</div>
+
+		<div class="information bg-light p-3">
+			<h4 class="text-center">Pieces</h4>
+			<table class="table">
+				<thead class="table-dark">
+					<tr class="text-center">
+						<th colspan="2">White</th>
+						<th colspan="2">Black</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr class="text-center">
+						<th>Normal</th>
+						<th>Capstones</th>
+						<th>Normal</th>
+						<th>Capstones</th>
+					</tr>
+					<tr class="text-center">
+						<td id="whiteNormalPieces">0</td>
+						<td id="whiteCapstones">0</td>
+						<td id="blackNormalPieces">0</td>
+						<td id="blackCapstones">0</td>
+					</tr>
+				</tbody>
+			</table>
+			<h5>Current player: <span id="currentPlayer"></span></h5>
+
+			<hr>
+
+			<h4 class="text-center">Move history</h4>
+			<div class="overflow-auto" id="moves">
+			</div>
+		</div>
+
+		<div class="d-none bg-light p-3" id="gameResult">
+			<h4 class="text-center" id="gameResultText"></h4>
+		</div>
+	</body>
+</html>

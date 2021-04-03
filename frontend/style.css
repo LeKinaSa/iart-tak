@@ -1,0 +1,17 @@
+
+.controls, #gameResult {
+    position: absolute;
+    left: 1em;
+    top: 1em;
+}
+
+.information {
+    position: absolute;
+    right: 1em;
+    top: 1em;
+}
+
+#moves {
+    max-height: 50vh;
+}
+
