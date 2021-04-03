@@ -1,6 +1,5 @@
 from tak import State, evaluate_easy, evaluate_medium, evaluate_hard
-import csv
-import time
+import csv, time
 
 def test_negamax(state, depth, pruning, caching, evaluation_function):
     '''Obtains the total time needed by negamax algorithm to find a solution.'''
@@ -60,6 +59,8 @@ def statistics():
         board_size = 3
         for n in range(1, 6):
             test(board_size, n,  True,  True, difficulty)
+        if difficulty != "easy":
+            break
         for n in range(1, 5):
             test(board_size, n,  True, False, difficulty)
         for n in range(1, 3):
@@ -80,14 +81,8 @@ def statistics():
             test(board_size, n, True, True, difficulty)
     return
 
-start = time.time()
-statistics()
-end = time.time()
-
-print(end - start)
-# State.nm_calls
-# State.nm_prunings
-# State.nm_cache_hits
-# State.nm_time_possible_moves
-# State.nm_time_evaluating
-# State.total_time
+if __name__ == "__main__":
+    start = time.time()
+    statistics()
+    end = time.time()
+    print(end - start)
