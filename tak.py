@@ -156,8 +156,6 @@ def heuristic_nearness_to_optimal_road(state, player) -> int:
 def heuristic_influence(state, player) -> int:
     '''
     Calculates the number of squares a player's pieces can influence (similar to space control in Chess).
-    Only considers flat pieces and does not consider stacks of height > 1, since the calculations become
-    vastly more complicated when considering the splitting of stacks.
     '''
     value = 0
 
@@ -165,28 +163,28 @@ def heuristic_influence(state, player) -> int:
         for col in range(state.board_size):
             stack = state.board[row][col]
 
-            if len(stack) == 1 and stack[0].type == PieceType.FLAT:
+            if stack:
                 pos = Position(row, col)
                 adjacent = [pos.up(), pos.down(), pos.left(), pos.right()]
-                adjacent = filter(lambda pos: pos.is_within_bounds(0, state.board_size - 1), adjacent)
+                adjacent = list(filter(lambda pos: pos.is_within_bounds(0, state.board_size - 1), adjacent))
 
                 protected = False
                 for adj_pos in adjacent:
                     adj_stack = state.board[adj_pos.row][adj_pos.col]
 
-                    if len(adj_stack) == 1 and adj_stack[0].type == PieceType.FLAT and adj_stack[0].color == stack[0].color:
+                    if adj_stack and adj_stack[-1].color == stack[-1].color:
                         protected = True
                         break
                 
                 for adj_pos in adjacent:
                     adj_stack = state.board[adj_pos.row][adj_pos.col]
 
-                    if not adj_stack or (protected and len(adj_stack) == 1 and adj_stack[0].color != stack[0].color):
-                        value += stack[0].color * player
+                    if not adj_stack or adj_stack[-1].color == stack[-1].color or (protected and adj_stack[-1].type == PieceType.FLAT and adj_stack[-1].color != stack[-1].color):
+                        value += stack[-1].color * player
 
     return value
 
-def evaluate(state, player: Player, level: int = 3) -> int:
+def evaluate(state, player: Player, depth: int, level: int = 3) -> int:
     '''Returns a number representing the value of this game state for the given player'''
 
     result = state.objective()
@@ -194,34 +192,34 @@ def evaluate(state, player: Player, level: int = 3) -> int:
     if result == Result.DRAW:
         return 0
     elif (result == Result.WHITE_WIN and player == Player.WHITE) or (result == Result.BLACK_WIN and player == Player.BLACK):
-        return int(1e9)
+        return int(1e9) + depth
     elif (result == Result.WHITE_WIN and player == Player.BLACK) or (result == Result.BLACK_WIN and player == Player.WHITE):
-        return int(-1e9)
+        return int(-1e9) - depth
 
     value = 0
 
     # The overall evaluation can be fine-tuned by adjusting each heuristic's multiplier
     if level == 1:
-        value = 10 * heuristic_num_flats(state, player) + 3 * heuristic_captured_pieces(state, player) + heuristic_influence(state, player)
+        value = 10 * heuristic_num_flats(state, player) + 2 * heuristic_captured_pieces(state, player) + 2 * heuristic_influence(state, player)
     elif level == 2:
-        value = 10 * heuristic_num_flats(state, player) + 3 * heuristic_captured_pieces(state, player) + heuristic_influence(state, player) + heuristic_penalty_walls(state, player)
+        value = 10 * heuristic_num_flats(state, player) + 2 * heuristic_captured_pieces(state, player) + 2 * heuristic_influence(state, player) + heuristic_penalty_walls(state, player)
     elif level == 3:
-        value = 10 * heuristic_num_flats(state, player) + heuristic_penalty_walls(state, player) + heuristic_influence(state, player) + \
-            3 * heuristic_captured_pieces(state, player) + heuristic_nearness_to_optimal_road(state, player)
+        value = 10 * heuristic_num_flats(state, player) + heuristic_penalty_walls(state, player) + 2 * heuristic_influence(state, player) + \
+            2 * heuristic_captured_pieces(state, player) + heuristic_nearness_to_optimal_road(state, player)
 
     return value
 
-def evaluate_easy(state, player: Player) -> int:
+def evaluate_easy(state, player: Player, depth: int) -> int:
     '''Returns the game state evaluation for the easy (level 1) AI'''
-    return evaluate(state, player, 1)
+    return evaluate(state, player, depth, 1)
 
-def evaluate_medium(state, player: Player) -> int:
+def evaluate_medium(state, player: Player, depth: int) -> int:
     '''Returns the game state evaluation for the medium (level 2) AI'''
-    return evaluate(state, player, 2)
+    return evaluate(state, player, depth, 2)
 
-def evaluate_hard(state, player: Player) -> int:
+def evaluate_hard(state, player: Player, depth: int) -> int:
     '''Returns the game state evaluation for the hard (level 3) AI'''
-    return evaluate(state, player, 3)
+    return evaluate(state, player, depth, 3)
 
 
 class State:
@@ -351,14 +349,15 @@ class State:
             return Result.DRAW
 
         return Result.NOT_FINISHED
-
     
     # Statistics for the negamax algorithm
+    total_time = 0
     nm_calls = 0
     nm_prunings = 0
     nm_cache_hits = 0
     nm_time_possible_moves = 0
     nm_time_evaluating = 0
+    nm_time_playing_moves = 0
 
     transposition_cache = {}
     def negamax(self, depth: int, evaluation_function: Callable = evaluate_hard, pruning: bool = False, caching: bool = False, statistics: bool = False):
@@ -386,18 +385,20 @@ class State:
             State.nm_cache_hits = 0
             State.nm_time_possible_moves = 0
             State.nm_time_evaluating = 0
+            State.nm_time_playing_moves = 0
 
         start = time.time()
         _, move = self.negamax_recursive(depth, evaluation_function, pruning, caching, statistics, alpha, beta)
         end = time.time()
 
         if statistics:
-            print("Total execution time:", end - start)
-            print("Number of positions analysed:", State.nm_calls)
-            print("Number of cuts:", State.nm_prunings)
-            print("Number of cache hits:", State.nm_cache_hits)
-            print("Time spent calculting possible moves:", State.nm_time_possible_moves)
-            print("Time spent evaluating:", State.nm_time_evaluating)
+            State.total_time = end - start
+            #print("Total execution time:", end - start)
+            #print("Number of positions analysed:", State.nm_calls)
+            #print("Number of cuts:", State.nm_prunings)
+            #print("Number of cache hits:", State.nm_cache_hits)
+            #print("Time spent calculting possible moves:", State.nm_time_possible_moves)
+            #print("Time spent evaluating:", State.nm_time_evaluating)
 
         return move
     
@@ -434,7 +435,7 @@ class State:
         # Maximum depth has been reached or no possible moves (game has ended): run evaluation function
         if depth == 0 or not moves:
             start = time.time()
-            evaluation = evaluation_function(self, self.current_player)
+            evaluation = evaluation_function(self, self.current_player, depth)
             end = time.time()
 
             if statistics:
@@ -446,7 +447,12 @@ class State:
         max_value = int(-1e10)
 
         for move in moves:
+            start = time.time()
             new_state = move.play(self)
+            end = time.time()
+
+            if statistics:
+                State.nm_time_playing_moves += end - start
             
             value = -new_state.negamax_recursive(depth - 1, evaluation_function, pruning, caching, statistics, -beta, -alpha)[0]
 
