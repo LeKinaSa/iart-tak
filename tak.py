@@ -201,7 +201,7 @@ def heuristic_influence(state, player) -> int:
 
     return value
 
-def evaluate(state, player: Player, level: int = 3) -> int:
+def evaluate(state, player: Player, depth: int, level: int = 3) -> int:
     '''Returns a number representing the value of this game state for the given player'''
 
     result = state.objective()
@@ -209,9 +209,9 @@ def evaluate(state, player: Player, level: int = 3) -> int:
     if result == Result.DRAW:
         return 0
     elif (result == Result.WHITE_WIN and player == Player.WHITE) or (result == Result.BLACK_WIN and player == Player.BLACK):
-        return int(1e9)
+        return int(1e9) + depth
     elif (result == Result.WHITE_WIN and player == Player.BLACK) or (result == Result.BLACK_WIN and player == Player.WHITE):
-        return int(-1e9)
+        return int(-1e9) - depth
 
     value = 0
 
@@ -226,14 +226,14 @@ def evaluate(state, player: Player, level: int = 3) -> int:
 
     return value
 
-def evaluate_easy(state, player: Player) -> int:
-    return evaluate(state, player, 1)
+def evaluate_easy(state, player: Player, depth: int) -> int:
+    return evaluate(state, player, depth, 1)
 
-def evaluate_medium(state, player: Player) -> int:
-    return evaluate(state, player, 2)
+def evaluate_medium(state, player: Player, depth: int) -> int:
+    return evaluate(state, player, depth, 2)
 
-def evaluate_hard(state, player: Player) -> int:
-    return evaluate(state, player, 3)
+def evaluate_hard(state, player: Player, depth: int) -> int:
+    return evaluate(state, player, depth, 3)
 
 
 class State:
@@ -449,7 +449,7 @@ class State:
         # Maximum depth has been reached or no possible moves (game has ended): run evaluation function
         if depth == 0 or not moves:
             start = time.time()
-            evaluation = evaluation_function(self, self.current_player)
+            evaluation = evaluation_function(self, self.current_player, depth)
             end = time.time()
 
             if statistics:
@@ -502,7 +502,7 @@ class State:
         moves = self.possible_moves()
 
         if depth == 0 or not moves:
-            return evaluate(self, self.current_player), None
+            return evaluate(self, self.current_player, depth), None
         
         best_move = None
         max_value = int(-1e9)
@@ -528,7 +528,7 @@ class State:
         moves = self.possible_moves()
         
         if depth == 0 or not moves:
-            return evaluate(self, self.current_player), None
+            return evaluate(self, self.current_player, depth), None
         
         best_move = None
         min_value = int(1e9)
