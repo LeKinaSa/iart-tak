@@ -55,26 +55,26 @@ def test(board_size, depth, cuts, caching, evaluation):
 
 def statistics():
     '''Obtain statistics for the total execution times from our negamax algorithm.'''
+    
     for difficulty in ["easy", "medium", "hard"]:
         board_size = 3
         for n in range(1, 6):
             test(board_size, n,  True,  True, difficulty)
+        
         if difficulty != "easy":
             break
+        
         for n in range(1, 5):
             test(board_size, n,  True, False, difficulty)
-        for n in range(1, 3):
             test(board_size, n, False,  True, difficulty)
-        test(board_size, 1, False, False, difficulty)
+            test(board_size, n, False, False, difficulty)
         
         board_size = 4
         for n in range(1, 5):
             test(board_size, n,  True,  True, difficulty)
-        for n in range(1, 3):
             test(board_size, n,  True, False, difficulty)
-        for n in range(1, 2):
             test(board_size, n, False,  True, difficulty)
-        test(board_size, 1, False, False, difficulty)
+            test(board_size, n, False, False, difficulty)
 
         board_size = 5
         for n in range(1, 4):
