@@ -129,7 +129,7 @@ def statistics():
     
     # Heuristics
     for difficulty in ["easy", "medium", "hard"]:
-        test_totals(difficulty, iterations)
+        test_heuristics(difficulty, iterations)
     
     # Time Percentage
     test_time_percentage(iterations)
