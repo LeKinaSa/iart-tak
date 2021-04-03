@@ -357,6 +357,7 @@ class State:
     nm_cache_hits = 0
     nm_time_possible_moves = 0
     nm_time_evaluating = 0
+    nm_time_playing_moves = 0
 
     transposition_cache = {}
     def negamax(self, depth: int, evaluation_function: Callable = evaluate_hard, pruning: bool = False, caching: bool = False, statistics: bool = False):
@@ -384,6 +385,7 @@ class State:
             State.nm_cache_hits = 0
             State.nm_time_possible_moves = 0
             State.nm_time_evaluating = 0
+            State.nm_time_playing_moves = 0
 
         start = time.time()
         _, move = self.negamax_recursive(depth, evaluation_function, pruning, caching, statistics, alpha, beta)
@@ -445,7 +447,12 @@ class State:
         max_value = int(-1e10)
 
         for move in moves:
+            start = time.time()
             new_state = move.play(self)
+            end = time.time()
+
+            if statistics:
+                State.nm_time_playing_moves += end - start
             
             value = -new_state.negamax_recursive(depth - 1, evaluation_function, pruning, caching, statistics, -beta, -alpha)[0]
 
