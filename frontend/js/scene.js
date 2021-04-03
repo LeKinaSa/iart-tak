@@ -145,6 +145,17 @@ let moveNum = 1;
 
 const playerTypes = {};
 
+// https://stackoverflow.com/a/5732881
+function hostAvailable(url) {
+	var req = new XMLHttpRequest();
+	req.open('GET', url, false);
+	try {
+		req.send();
+	} catch (e){ // CORS exception
+		return false;
+	}
+  }
+
 function updateGameState(state) {
 	updateBoard(state['board']);
 	
@@ -158,7 +169,10 @@ function updateGameState(state) {
 
 function onGameTypeSubmitted(event) {
 	event.preventDefault();
-
+	if (!hostAvailable("http://localhost:8001")) {
+		alert("Warning: Could not reach server. Is the backend server running?");
+		return;
+	}
 	let request = new XMLHttpRequest();
 	let url = 'http://localhost:8001/start_game';
 	request.open('POST', url, true);
