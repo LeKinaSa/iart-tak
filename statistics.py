@@ -116,6 +116,21 @@ def test_time_percentage(n):
     write_csv('time_percentage.csv', ['Time calculating possible moves (%)', 'Time evaluating positions (%)', 'Time playing moves (%)', 'Time performing other operations (%)'])
     write_csv('time_percentage.csv', [time_possible_moves, time_evaluating, time_playing_moves, time_other])
 
+def test_depth(n):
+    for depth in range(3, 6):
+        details = '4TThard' + depth
+        state = State(3)
+
+        times = [details]
+        for _ in range(n):
+            time, move = test_negamax(state, depth, True, True, evaluate_hard)
+            if state.objective() != Result.NOT_FINISHED:
+                break
+            times.append(time)
+            state = move.play(state)
+        
+        write_csv('depth.csv', times)
+
 def statistics():
     '''Obtains statistics for the negamax algorithm.'''
     
